@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CRH Call Center — Integration & Connection Guide</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#1a1a2e;background:#fff;padding:40px;max-width:820px;margin:0 auto}
+  @media print{body{padding:20px}@page{margin:15mm}}
+  h1{font-size:24px;font-weight:800;color:#1558A0;margin-bottom:4px}
+  .subtitle{font-size:13px;color:#64748B;margin-bottom:30px;border-bottom:2px solid #1558A0;padding-bottom:12px}
+  h2{font-size:15px;font-weight:700;color:#fff;background:#1558A0;padding:8px 14px;border-radius:6px;margin:28px 0 14px}
+  h3{font-size:13px;font-weight:700;color:#1558A0;margin:16px 0 8px}
+  .step{display:flex;gap:14px;margin-bottom:14px;align-items:flex-start}
+  .num{min-width:28px;height:28px;background:#1558A0;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;margin-top:1px}
+  .step-body{flex:1}
+  .step-body p{margin-bottom:5px;line-height:1.6}
+  .step-body ul{margin:6px 0 6px 16px}
+  .step-body li{margin-bottom:3px;line-height:1.6}
+  code{background:#F1F5F9;border:1px solid #E2E8F0;border-radius:4px;padding:1px 6px;font-family:Consolas,monospace;font-size:12px;color:#0B3D72}
+  .code-block{background:#F1F5F9;border:1px solid #E2E8F0;border-radius:6px;padding:12px 14px;font-family:Consolas,monospace;font-size:12px;color:#0B3D72;margin:8px 0;white-space:pre-wrap;word-break:break-all}
+  .warn{background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:#92400E}
+  .info{background:#EBF3FC;border:1px solid #BFDBFE;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:#1558A0}
+  .ok{background:#ECFDF5;border:1px solid #A7F3D0;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:#047857}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px}
+  th{background:#F1F5F9;padding:7px 10px;text-align:left;font-weight:700;border:1px solid #E2E8F0;color:#334155}
+  td{padding:7px 10px;border:1px solid #E2E8F0;color:#334155;vertical-align:top}
+  tr:nth-child(even) td{background:#FAFAFA}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+  .b-blue{background:#DBEAFE;color:#1D4ED8}
+  .b-green{background:#D1FAE5;color:#065F46}
+  .b-amber{background:#FEF3C7;color:#92400E}
+  .b-red{background:#FEE2E2;color:#991B1B}
+  .divider{border:none;border-top:1px dashed #E2E8F0;margin:20px 0}
+  .footer{margin-top:40px;padding-top:16px;border-top:2px solid #E2E8F0;font-size:11px;color:#94A3B8;display:flex;justify-content:space-between}
+  .page-break{page-break-before:always}
+
+  /* ── Diagram styles ── */
+  .diagram{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:24px 20px;margin:14px 0;font-size:12px}
+  .diagram-row{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;margin-bottom:6px}
+  .diagram-box{background:#1558A0;color:#fff;font-weight:700;padding:8px 16px;border-radius:6px;text-align:center;min-width:120px;white-space:nowrap}
+  .diagram-box.secondary{background:#0B3D72}
+  .diagram-box.light{background:#EBF3FC;color:#1558A0;border:1px solid #BFDBFE}
+  .arrow-right{color:#1558A0;font-size:18px;padding:0 8px;font-weight:700;line-height:1}
+  .arrow-down{color:#1558A0;font-size:18px;text-align:center;line-height:1;padding:4px 0;display:block}
+  .diagram-label{font-size:10px;color:#64748B;text-align:center;margin-top:4px}
+  .diagram-center{display:flex;flex-direction:column;align-items:center;gap:0}
+  .flow-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin:8px 0}
+  .flow-col{display:flex;flex-direction:column;gap:6px;align-items:center}
+</style>
+</head>
+<body>
+
+<h1>CRH Call Center — Integration &amp; Connection Guide</h1>
+<div class="subtitle">Connecting WFM Dashboard &nbsp;·&nbsp; Quality Evaluation &nbsp;·&nbsp; Manager Live Dashboard &nbsp;·&nbsp; xCally ACD &nbsp;—&nbsp; Czech Rehabilitation Hospital · Call Center · Al Ain, UAE</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 1 — System Overview</h2>
+
+<p style="margin-bottom:12px;line-height:1.7">The CRH Call Center uses four interconnected tools. The diagram below shows how data flows between them.</p>
+
+<div class="diagram">
+  <!-- Row 1: xCally at top -->
+  <div style="display:flex;justify-content:center;margin-bottom:4px">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="diagram-box">xCally ACD</div>
+      <div class="diagram-label">Live queue · SL · agent status</div>
+    </div>
+  </div>
+  <!-- Arrow down from xCally -->
+  <div style="display:flex;justify-content:center">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <span class="arrow-down">│</span>
+      <span class="arrow-down" style="padding:0">▼</span>
+    </div>
+  </div>
+  <!-- Row 2: three boxes feeding into Manager Dashboard -->
+  <div style="display:flex;justify-content:center;align-items:center;gap:0;flex-wrap:wrap;margin-bottom:4px">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="diagram-box light">Quality Eval Dashboard</div>
+      <div class="diagram-label">Scores via localStorage</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 8px">
+      <span style="color:#1558A0;font-size:16px;font-weight:700">──►</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="diagram-box secondary">Manager Live Dashboard</div>
+      <div class="diagram-label">Central live overview</div>
+    </div>
+    <div style="display:flex;align-items:center;padding:0 8px">
+      <span style="color:#1558A0;font-size:16px;font-weight:700">◄──</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="diagram-box light">WFM Dashboard</div>
+      <div class="diagram-label">Attendance · rota · breaks</div>
+    </div>
+  </div>
+  <!-- Arrow down to Google Sheets -->
+  <div style="display:flex;justify-content:center">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <span class="arrow-down">│</span>
+      <span class="arrow-down" style="padding:0">▼</span>
+    </div>
+  </div>
+  <!-- Row 3: Google Sheets -->
+  <div style="display:flex;justify-content:center">
+    <div style="display:flex;flex-direction:column;align-items:center">
+      <div class="diagram-box light">Google Sheets (GAS Backend)</div>
+      <div class="diagram-label">Persistent data store · Apps Script API</div>
+    </div>
+  </div>
+</div>
+
+<h3>What data flows where</h3>
+<table>
+  <tr><th>Source</th><th>Destination</th><th>Data</th><th>Method</th><th>Frequency</th></tr>
+  <tr><td><strong>xCally ACD</strong></td><td>Manager Dashboard</td><td>Live queue stats, Service Level %, agent status (available / on call / wrap)</td><td>REST API over LAN</td><td>Real-time (every 30 s)</td></tr>
+  <tr><td><strong>WFM Dashboard</strong></td><td>Google Sheets → Manager Dashboard</td><td>Attendance records, rota shifts, break schedules</td><td>Google Apps Script (GAS) Web App URL</td><td>On save / on load</td></tr>
+  <tr><td><strong>Quality Eval Dashboard</strong></td><td>Manager Dashboard</td><td>Call evaluation scores, QA summaries</td><td>Browser localStorage (same device)</td><td>On page open</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>PART 2 — Connect WFM Dashboard to Google Sheets</h2>
+
+<p style="margin-bottom:12px;line-height:1.7">The WFM Dashboard saves all data to a Google Sheet via a Google Apps Script Web App URL. The Manager Dashboard reads from the same URL. Both must point to the same deployment.</p>
+
+<h3>Step A — Get the GAS Web App URL</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open your Google Sheet (named <strong>CRH WFM</strong>) → click <strong>Extensions → Apps Script</strong>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Click <strong>Deploy → Manage deployments</strong> (top right).</p>
+    <p>Copy the <strong>Web app URL</strong> — it looks like:</p>
+    <div class="code-block">https://script.google.com/macros/s/AKfycb.../exec</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>If no deployment exists yet, click <strong>Deploy → New deployment</strong> → gear icon → <strong>Web app</strong> → set <em>Execute as</em> = <strong>Me</strong> · <em>Who has access</em> = <strong>Anyone</strong> → Deploy → copy the URL.</p>
+  </div>
+</div>
+
+<h3>Step B — Paste the URL into the WFM Dashboard</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open <code>index.html</code> in <strong>Notepad++</strong> or <strong>VS Code</strong>.</p>
+    <p>Press <strong>Ctrl+F</strong> and search for: <code>const SHEET_API = '';</code></p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Replace with your URL:</p>
+    <div class="code-block">const SHEET_API = 'https://script.google.com/macros/s/YOUR_ID/exec';</div>
+    <p>Save the file (Ctrl+S).</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Open <code>index.html</code> in Chrome → log in as <code>yasir</code> / <code>CRH@Admin2026</code>.</p>
+    <div class="ok">✅ Green toast "Synced from Google Sheets ✓" confirms the connection is working.</div>
+  </div>
+</div>
+
+<h3>Step C — Paste the same URL into the Manager Dashboard</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open <code>manager-dashboard.html</code> in Chrome.</p>
+    <p>Click the <strong>⚙ Settings</strong> button (top right of the page).</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Find the <strong>WFM API URL</strong> field → paste the same GAS Web App URL → click <strong>Save</strong>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>The WFM panel on the Manager Dashboard will now show live attendance, breaks, and rota data.</p>
+  </div>
+</div>
+
+<div class="info">ℹ️ Both dashboards must use the EXACT same URL. If the WFM owner re-deploys Code.gs, update SHEET_API in both index.html and manager-dashboard.html settings.</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>PART 3 — Connect Manager Dashboard to xCally</h2>
+
+<h3>What is xCally?</h3>
+<p style="margin-bottom:10px;line-height:1.7">xCally is the call center's ACD (Automatic Call Distribution) system used at CRH. It routes incoming calls and tracks real-time queue statistics including Service Level, queue wait times, and individual agent status.</p>
+
+<h3>xCally API Requirements</h3>
+<table>
+  <tr><th>Setting</th><th>Where to find it</th><th>Example value</th></tr>
+  <tr><td><strong>xCally Base URL</strong></td><td>Your IT department / server IP address</td><td><code>http://192.168.1.100</code> or <code>https://crh-xcally.local</code></td></tr>
+  <tr><td><strong>API Key</strong></td><td>xCally Admin Panel → Settings → API Keys</td><td><code>xcally_key_abc123...</code></td></tr>
+  <tr><td><strong>Queue Name</strong></td><td>xCally Admin → Queues</td><td><code>Inbound</code>, <code>Outbound</code></td></tr>
+</table>
+
+<h3>Steps to Connect</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Ask your IT team for the <strong>xCally server IP address</strong> and <strong>API key</strong>. These are internal credentials — IT controls them.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Open <code>manager-dashboard.html</code> in Chrome.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Click the <strong>⚙ Settings</strong> button (top right corner of the page).</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body">
+    <p>Enter the <strong>xCally URL</strong> (e.g. <code>http://192.168.1.100</code>) and the <strong>API key</strong> in the respective fields.</p>
+    <p>Enter the <strong>Queue Name(s)</strong> you want to monitor (e.g. <code>Inbound</code>).</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">5</div>
+  <div class="step-body">
+    <p>Click <strong>Save</strong>. The Live Service Level panel will start polling xCally every 30 seconds and display real-time queue stats.</p>
+  </div>
+</div>
+
+<div class="warn">⚠️ The manager dashboard must be opened on a computer connected to the same internal network (LAN) or VPN as the xCally server. It will NOT work from home or from a different network without a VPN connection to the hospital's internal network.</div>
+
+<h3>If xCally Blocks the Connection (CORS Error)</h3>
+<p style="margin-bottom:8px;line-height:1.7">A CORS error means the xCally server is rejecting requests from the browser for security reasons. Ask your IT team to take one of the following actions:</p>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>In xCally admin: <strong>Settings → API → Enable CORS</strong> → add the dashboard's origin (the folder path or local URL where the dashboard file is opened).</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Alternatively, ask IT if a <strong>xCally Wallboard URL</strong> is available — xCally Wallboard mode is designed for browser display and already includes the correct headers.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>If neither option is available, IT can set up a lightweight <strong>reverse proxy</strong> (e.g. Nginx) on the same network that forwards requests to xCally with the correct CORS headers.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>PART 4 — Quality Evaluation Storage (Google Sheets)</h2>
+
+<h3>What changed</h3>
+<p style="margin-bottom:10px;line-height:1.7">The Quality Evaluation dashboard no longer stores evaluations in the browser's local storage. All evaluations are now saved directly to the Google Sheet (Evaluations tab) using the same GAS Web App as the WFM dashboard. This means:</p>
+<ul style="margin:6px 0 12px 16px;line-height:1.9">
+  <li>Evaluations are accessible from any device, any browser</li>
+  <li>The Manager Dashboard reads quality data from Google Sheets automatically</li>
+  <li>No data is lost if you clear the browser or switch computers</li>
+</ul>
+
+<h3>Step 1 — Add SHEET_API to the Quality Dashboard</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open <code>quality-dashboard.html</code> in <strong>Notepad++</strong> or <strong>VS Code</strong>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Find this line near the top of the script:</p>
+    <div class="code-block">const SHEET_API = '';</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Paste the same GAS Web App URL as index.html:</p>
+    <div class="code-block">const SHEET_API = 'https://script.google.com/macros/s/YOUR_ID/exec';</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body">
+    <p>Save the file.</p>
+  </div>
+</div>
+
+<h3>Step 2 — Add the Evaluations sheet to Google Sheets (first time only)</h3>
+<p style="margin-bottom:10px;line-height:1.7">The <code>setup()</code> function already creates the Evaluations sheet. If you ran setup() before this update, add it manually:</p>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open your <strong>CRH WFM</strong> Google Sheet.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Click the <strong>+</strong> button at the bottom to add a new tab.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Name it exactly: <code>Evaluations</code></p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body">
+    <p>Add these headers in row 1 (one per column):</p>
+    <div class="code-block">id | agent | date | callType | callRef | total | bd0 | bd1 | bd2 | bd3 | bd4 | bd5 | notes</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">5</div>
+  <div class="step-body">
+    <p>If you already ran <code>setup()</code> recently, the tab was created automatically — skip this step.</p>
+  </div>
+</div>
+
+<h3>Step 3 — Log in and verify</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open <code>quality-dashboard.html</code> in Chrome.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Log in as <code>yasir</code> / <code>CRH@Admin2026</code>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Complete and save one evaluation.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body">
+    <p>Open your Google Sheet → click the <strong>Evaluations</strong> tab.</p>
+    <div class="ok">✅ You should see the evaluation appear as a new row.</div>
+  </div>
+</div>
+
+<h3>Step 4 — Manager Dashboard reads automatically</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open <code>manager-dashboard.html</code>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Click <strong>⚙ Settings</strong> → make sure the WFM Sheet URL is saved.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>The Quality panel now reads from Google Sheets automatically — no more "same device" requirement.</p>
+  </div>
+</div>
+
+<div class="info">ℹ️ The quality dashboard keeps a local browser cache as backup. If Google Sheets is unreachable, it shows the last synced data from the browser cache.</div>
+
+<div class="warn">⚠️ After adding SHEET_API, you must create a NEW Web App deployment in Google Apps Script (Deploy → New Deployment) because the Evaluations sheet was added to Code.gs. Copy the new URL into both index.html AND quality-dashboard.html.</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>PART 5 — Daily Usage Checklist</h2>
+
+<table>
+  <tr><th>Time</th><th>Task</th><th>Dashboard</th><th>Action</th></tr>
+  <tr><td><span class="badge b-blue">Start of shift</span></td><td>Check service level</td><td>Manager Dashboard</td><td>Verify SL ≥ 85% in the Live Service Level panel</td></tr>
+  <tr><td><span class="badge b-blue">Start of shift</span></td><td>Mark attendance</td><td>WFM Dashboard</td><td>Set all agents to Present / Absent / Late for the day</td></tr>
+  <tr><td><span class="badge b-green">Throughout day</span></td><td>Monitor break status</td><td>Manager Dashboard</td><td>WFM panel shows who is currently on break and when breaks end</td></tr>
+  <tr><td><span class="badge b-green">Throughout day</span></td><td>Evaluate calls</td><td>Quality Dashboard</td><td>Score calls as they come in using the evaluation form</td></tr>
+  <tr><td><span class="badge b-amber">End of shift</span></td><td>Review KPIs</td><td>Manager Dashboard</td><td>All three panels (xCally, WFM, Quality) show daily summary figures</td></tr>
+  <tr><td><span class="badge" style="background:#F5F3FF;color:#7C3AED">Weekly</span></td><td>Export quality report</td><td>Quality Dashboard</td><td>Click Download Full Report to export evaluations as Excel</td></tr>
+  <tr><td><span class="badge" style="background:#F5F3FF;color:#7C3AED">Monthly</span></td><td>Export rota</td><td>WFM Dashboard</td><td>Rota tab → Export Excel to share the monthly schedule</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 6 — Troubleshooting Connection Issues</h2>
+
+<table>
+  <tr><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td>Manager dashboard shows "Configure API"</td><td>xCally config has not been saved yet</td><td>Click ⚙ Settings → enter xCally URL and API key → click Save</td></tr>
+  <tr><td>WFM panel shows "Login failed"</td><td>Wrong GAS URL, wrong credentials, or token expired</td><td>Verify <code>SHEET_API</code> in index.html is correct; log out and log back in to refresh the token</td></tr>
+  <tr><td>xCally panel shows "Live feed unavailable"</td><td>Network issue, wrong IP, or CORS error</td><td>Confirm you are on the hospital's LAN or VPN; ask IT to verify the xCally API is reachable and CORS is enabled</td></tr>
+  <tr><td>Quality panel is empty</td><td>Different browser or no evaluations saved yet</td><td>Open both dashboards in the same Chrome browser; save at least one evaluation in the Quality dashboard first</td></tr>
+  <tr><td>Data not updating / stale</td><td>Auto-refresh paused or network timeout</td><td>Click the Refresh All (🔄) button on the Manager Dashboard to force an immediate update</td></tr>
+  <tr><td>Changes to WFM not appearing in Manager Dashboard</td><td>Manager Dashboard is pointing to an old GAS URL</td><td>Open ⚙ Settings in manager-dashboard.html and update the WFM API URL to match the current deployment</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>PART 7 — File Reference</h2>
+
+<table>
+  <tr><th>File</th><th>Purpose</th><th>Open with</th><th>URL / Location</th></tr>
+  <tr>
+    <td><code>index.html</code></td>
+    <td>WFM Dashboard — attendance, rota, breaks, leave, swaps</td>
+    <td>Chrome</td>
+    <td>Double-click the file to open in browser</td>
+  </tr>
+  <tr>
+    <td><code>manager-dashboard.html</code></td>
+    <td>Live overview — xCally feed, WFM summary, quality scores</td>
+    <td>Chrome</td>
+    <td>Double-click the file to open in browser</td>
+  </tr>
+  <tr>
+    <td><code>crh_quality_evaluation_dashboard.html</code></td>
+    <td>Quality scoring — evaluate calls, rate agents, export reports</td>
+    <td>Chrome</td>
+    <td>Double-click the file to open in browser</td>
+  </tr>
+  <tr>
+    <td><code>Code.gs</code></td>
+    <td>Google Sheets backend — all data storage and API logic</td>
+    <td>Google Apps Script editor</td>
+    <td>sheets.google.com → Extensions → Apps Script</td>
+  </tr>
+  <tr>
+    <td><code>Handover Guide.html</code></td>
+    <td>Full setup instructions for the WFM system</td>
+    <td>Chrome → Ctrl+P → Save as PDF</td>
+    <td>Double-click the file to open in browser</td>
+  </tr>
+  <tr>
+    <td><code>Integration Guide.html</code></td>
+    <td>This document — how to connect all dashboards together</td>
+    <td>Chrome → Ctrl+P → Save as PDF</td>
+    <td>Double-click the file to open in browser</td>
+  </tr>
+</table>
+
+<div class="info">💡 To save any guide as a PDF: open the .html file in Chrome → press <strong>Ctrl+P</strong> → change the destination to <strong>"Save as PDF"</strong> → click Save. All guides are designed to print cleanly with correct page breaks.</div>
+
+<div class="footer">
+  <span>CRH Call Center · Czech Rehabilitation Hospital · Al Ain, UAE</span>
+  <span>Integration &amp; Connection Guide · 2026</span>
+</div>
+
+</body>
+</html>

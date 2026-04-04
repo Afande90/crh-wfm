@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CRH WFM — Handover & Setup Guide</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#1a1a2e;background:#fff;padding:40px;max-width:820px;margin:0 auto}
+  @media print{body{padding:20px}@page{margin:15mm}}
+  h1{font-size:24px;font-weight:800;color:#1558A0;margin-bottom:4px}
+  .subtitle{font-size:13px;color:#64748B;margin-bottom:30px;border-bottom:2px solid #1558A0;padding-bottom:12px}
+  h2{font-size:15px;font-weight:700;color:#fff;background:#1558A0;padding:8px 14px;border-radius:6px;margin:28px 0 14px}
+  h3{font-size:13px;font-weight:700;color:#1558A0;margin:16px 0 8px}
+  .step{display:flex;gap:14px;margin-bottom:14px;align-items:flex-start}
+  .num{min-width:28px;height:28px;background:#1558A0;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;margin-top:1px}
+  .step-body{flex:1}
+  .step-body p{margin-bottom:5px;line-height:1.6}
+  .step-body ul{margin:6px 0 6px 16px}
+  .step-body li{margin-bottom:3px;line-height:1.6}
+  code{background:#F1F5F9;border:1px solid #E2E8F0;border-radius:4px;padding:1px 6px;font-family:Consolas,monospace;font-size:12px;color:#0B3D72}
+  .code-block{background:#F1F5F9;border:1px solid #E2E8F0;border-radius:6px;padding:12px 14px;font-family:Consolas,monospace;font-size:12px;color:#0B3D72;margin:8px 0;white-space:pre-wrap;word-break:break-all}
+  .warn{background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:#92400E}
+  .info{background:#EBF3FC;border:1px solid #BFDBFE;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:#1558A0}
+  .ok{background:#ECFDF5;border:1px solid #A7F3D0;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:#047857}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px}
+  th{background:#F1F5F9;padding:7px 10px;text-align:left;font-weight:700;border:1px solid #E2E8F0;color:#334155}
+  td{padding:7px 10px;border:1px solid #E2E8F0;color:#334155;vertical-align:top}
+  tr:nth-child(even) td{background:#FAFAFA}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700}
+  .b-blue{background:#DBEAFE;color:#1D4ED8}
+  .b-green{background:#D1FAE5;color:#065F46}
+  .b-amber{background:#FEF3C7;color:#92400E}
+  .b-red{background:#FEE2E2;color:#991B1B}
+  .divider{border:none;border-top:1px dashed #E2E8F0;margin:20px 0}
+  .screenshot-box{border:2px dashed #CBD5E1;border-radius:8px;padding:16px;text-align:center;color:#94A3B8;font-size:12px;margin:10px 0}
+  .footer{margin-top:40px;padding-top:16px;border-top:2px solid #E2E8F0;font-size:11px;color:#94A3B8;display:flex;justify-content:space-between}
+  .page-break{page-break-before:always}
+</style>
+</head>
+<body>
+
+<h1>CRH WFM Dashboard</h1>
+<div class="subtitle">Complete Handover & Setup Guide — Czech Rehabilitation Hospital · Call Center · Al Ain, UAE</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 1 — What You Are Receiving</h2>
+
+<p style="margin-bottom:12px;line-height:1.7">This package contains a complete <strong>Workforce Management Dashboard</strong> built as a single HTML file with a Google Sheets backend. No server is needed. Everything runs in the browser and saves data directly to a Google Sheet under your Google account.</p>
+
+<h3>Files included</h3>
+<table>
+  <tr><th>File</th><th>What it does</th></tr>
+  <tr><td><code>index.html</code></td><td>The full dashboard — open this in Chrome to use the system</td></tr>
+  <tr><td><code>Code.gs</code></td><td>The backend — paste this into Google Apps Script</td></tr>
+  <tr><td>User Credentials\users.txt</td><td>All login usernames and passwords</td></tr>
+</table>
+
+<h3>What the system does</h3>
+<ul style="margin:8px 0 0 16px;line-height:1.8">
+  <li>Daily attendance tracking (Present / Absent / Late / Leave / Off)</li>
+  <li>Monthly rota planning with auto-generate and Excel import/export</li>
+  <li>Break schedule management (3 slots: 15 min + 30 min + 15 min)</li>
+  <li>Annual leave and shift swap requests with admin approval</li>
+  <li>Live overview dashboard with KPIs</li>
+  <li>Agent personal view (breaks, rota, requests)</li>
+  <li>19 agents pre-configured across Inbound, Outbound, Supervisor teams</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 2 — One-Time Setup (Do This First)</h2>
+
+<div class="warn">⚠️ You only do this setup ONCE. Use your own Google account (Gmail). All data will be saved to your Google Drive.</div>
+
+<h3>Step 1 — Create the Google Sheet</h3>
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Go to <code>sheets.google.com</code> and sign in with your Gmail.</p>
+    <p>Click <strong>Blank spreadsheet</strong>.</p>
+    <p>Name it: <strong>CRH WFM</strong> (click the title at the top to rename).</p>
+  </div>
+</div>
+
+<h3>Step 2 — Add the backend code</h3>
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body"><p>In the Google Sheet, click the menu: <strong>Extensions → Apps Script</strong></p></div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body"><p>A code editor will open. <strong>Select all existing text</strong> (Ctrl+A) and <strong>delete it</strong>.</p></div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Open the file <code>Code.gs</code> from the package in Notepad or any text editor.</p>
+    <p><strong>Select all</strong> (Ctrl+A) → <strong>Copy</strong> (Ctrl+C).</p>
+    <p>Paste (Ctrl+V) into the Apps Script editor.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body"><p>Click the <strong>Save</strong> button (floppy disk icon, or Ctrl+S).</p></div>
+</div>
+
+<h3>Step 3 — Run setup once</h3>
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>In the Apps Script editor, find the function dropdown at the top (it may say <code>myFunction</code> or <code>doGet</code>).</p>
+    <p>Click it and select <strong>setup</strong>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body"><p>Click the <strong>Run</strong> button (▶ play icon).</p></div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>A popup will appear: <em>"Authorization Required"</em>.</p>
+    <p>Click <strong>Review permissions → Choose your Google account → Allow</strong>.</p>
+    <div class="info">ℹ️ This allows the script to read/write your Google Sheet. It only accesses this one spreadsheet.</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body">
+    <p>A green success popup will appear: <strong>"CRH WFM Setup Complete!"</strong></p>
+    <p>Click OK. Go back to your Google Sheet — you should now see <strong>8 tabs</strong> at the bottom: Users, Agents, Attendance, Rota, Breaks, Leave, Swaps, Config.</p>
+  </div>
+</div>
+
+<div class="ok">✅ If you see 8 tabs, setup was successful.</div>
+
+<h3>Step 4 — Deploy as Web App</h3>
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body"><p>In Apps Script, click <strong>Deploy → New deployment</strong> (top right button).</p></div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Click the <strong>gear icon ⚙</strong> next to "Select type" → choose <strong>Web app</strong>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Fill in the settings exactly as follows:</p>
+    <table>
+      <tr><th>Setting</th><th>Value</th></tr>
+      <tr><td>Description</td><td>CRH WFM API</td></tr>
+      <tr><td>Execute as</td><td><strong>Me</strong> (your Gmail)</td></tr>
+      <tr><td>Who has access</td><td><strong>Anyone</strong></td></tr>
+    </table>
+    <div class="warn">⚠️ "Who has access" must be <strong>Anyone</strong> (not "Anyone with a Google account"). Otherwise login will fail.</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body">
+    <p>Click <strong>Deploy</strong>.</p>
+    <p>A URL will appear — it looks like:</p>
+    <div class="code-block">https://script.google.com/macros/s/AKfycb.../exec</div>
+    <p><strong>Copy this URL</strong> — you need it in the next step.</p>
+  </div>
+</div>
+
+<h3>Step 5 — Connect the dashboard to your Sheet</h3>
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open <code>index.html</code> in <strong>Notepad++</strong> or <strong>VS Code</strong> (right-click → Open with).</p>
+    <p>Press <strong>Ctrl+F</strong> and search for:</p>
+    <div class="code-block">const SHEET_API = '';</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Replace it with your URL:</p>
+    <div class="code-block">const SHEET_API = 'https://script.google.com/macros/s/YOUR_ID/exec';</div>
+    <p>(Paste your URL between the single quotes.)</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body"><p>Save the file (Ctrl+S).</p></div>
+</div>
+
+<h3>Step 6 — Test the connection</h3>
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open <code>index.html</code> in <strong>Chrome</strong> (double-click the file).</p>
+    <p>Log in as: username <code>yasir</code> / password <code>CRH@Admin2026</code></p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>After login, a green toast at the bottom-right should appear:</p>
+    <div class="ok">✅ Synced from Google Sheets ✓</div>
+    <p>This means the dashboard is connected and saving data to your Sheet.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>PART 3 — How to Update the Web App (After Changes)</h2>
+
+<div class="info">ℹ️ Any time Code.gs is updated in the future, you must create a NEW deployment — do not reuse the old one.</div>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body"><p>In Apps Script → <strong>Deploy → New deployment</strong></p></div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body"><p>Same settings as before: Web app · Execute as Me · Anyone</p></div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body"><p>Copy the new URL → update <code>SHEET_API</code> in <code>index.html</code></p></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 4 — Login Accounts</h2>
+
+<h3>Admin Accounts</h3>
+<table>
+  <tr><th>Display Name</th><th>Username</th><th>Password</th><th>Access Level</th></tr>
+  <tr><td>Yasir Mohamed Ali</td><td><code>yasir</code></td><td><code>CRH@Admin2026</code></td><td><span class="badge b-blue">Admin — Full Access</span></td></tr>
+  <tr><td>Ibrahim</td><td><code>ibrahim</code></td><td><code>CRH@Admin2026</code></td><td><span class="badge b-blue">Admin — Full Access</span></td></tr>
+  <tr><td>Quality Team</td><td><code>quality</code></td><td><code>CRH@View2026</code></td><td><span class="badge b-amber">View Only</span></td></tr>
+</table>
+
+<h3>Agent Accounts (sample)</h3>
+<table>
+  <tr><th>Name</th><th>Username</th><th>Password</th><th>Team</th><th>Shift</th></tr>
+  <tr><td>Shyreena Husain Murad Alblooshi</td><td><code>shyreena</code></td><td><code>Shy@CRH101</code></td><td>Inbound</td><td>M</td></tr>
+  <tr><td>Chadya Karama</td><td><code>chadya</code></td><td><code>Cha@CRH102</code></td><td>Inbound</td><td>M1</td></tr>
+  <tr><td>Wadima Juma (Supervisor)</td><td><code>wadima.j</code></td><td><code>WJ@CRH001</code></td><td>Supervisor</td><td>M1</td></tr>
+  <tr><td colspan="5" style="color:#94A3B8;font-style:italic">See users.txt file for all 19 agent credentials</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 5 — Daily Usage (Admin)</h2>
+
+<table>
+  <tr><th>Task</th><th>Where</th><th>How</th></tr>
+  <tr><td>Mark attendance</td><td>Attendance tab</td><td>Select status for each agent — saves automatically to Sheet</td></tr>
+  <tr><td>Edit rota</td><td>Rota tab</td><td>Click any shift cell and change it — saves automatically</td></tr>
+  <tr><td>Set break times</td><td>Break Times tab</td><td>Enter times for each agent — leave blank to show suggested times only</td></tr>
+  <tr><td>Approve leave</td><td>Leave tab</td><td>Click Approve / Reject buttons on pending requests</td></tr>
+  <tr><td>Approve swaps</td><td>Swap Requests tab</td><td>Click Approve / Reject on pending swap requests</td></tr>
+  <tr><td>View live overview</td><td>Overview tab</td><td>Auto-updates with current attendance counts and KPIs</td></tr>
+  <tr><td>Import rota from Excel</td><td>Rota tab → Import Excel</td><td>Upload an .xlsx file with agent names and shift codes</td></tr>
+  <tr><td>Export credentials</td><td>Reports tab</td><td>Downloads an Excel file with all agent login details</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 6 — Shift Codes Reference</h2>
+
+<table>
+  <tr><th>Code</th><th>Name</th><th>Hours</th><th>Duty</th></tr>
+  <tr><td><span class="badge b-blue">M</span></td><td>Morning</td><td>07:00 – 14:00</td><td>7h</td></tr>
+  <tr><td><span class="badge b-blue">M1</span></td><td>Morning 10h</td><td>07:00 – 17:00</td><td>10h</td></tr>
+  <tr><td><span class="badge b-blue">M2</span></td><td>Morning Late</td><td>09:00 – 19:00</td><td>10h</td></tr>
+  <tr><td><span class="badge b-amber">A</span></td><td>Afternoon</td><td>12:00 – 22:00</td><td>10h</td></tr>
+  <tr><td><span class="badge b-amber">E</span></td><td>Evening</td><td>14:00 – 00:00</td><td>10h</td></tr>
+  <tr><td><span class="badge" style="background:#F1F5F9;color:#64748B">OFF</span></td><td>Day Off</td><td>—</td><td>—</td></tr>
+  <tr><td><span class="badge b-green">AL</span></td><td>Annual Leave</td><td>—</td><td>—</td></tr>
+  <tr><td><span class="badge" style="background:#F5F3FF;color:#7C3AED">TB</span></td><td>Time Back</td><td>—</td><td>—</td></tr>
+  <tr><td><span class="badge b-red">ML</span></td><td>Maternity Leave</td><td>—</td><td>—</td></tr>
+</table>
+
+<h3>Break Standard (All Shifts)</h3>
+<table>
+  <tr><th>Slot</th><th>Name</th><th>Max Duration</th></tr>
+  <tr><td>1</td><td>Break 1</td><td>15 minutes</td></tr>
+  <tr><td>2</td><td>Lunch</td><td>30 minutes</td></tr>
+  <tr><td>3</td><td>Break 3</td><td>15 minutes</td></tr>
+  <tr><td colspan="2"><strong>Total per agent per day</strong></td><td><strong>60 minutes</strong></td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 7 — Troubleshooting</h2>
+
+<table>
+  <tr><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td>Login says "Invalid username or password"</td><td>SHEET_API URL not set or wrong</td><td>Check <code>SHEET_API</code> in index.html is set to your exact deployment URL</td></tr>
+  <tr><td>Data not saving to Sheet</td><td>Token expired or deployment issue</td><td>Log out and log back in. If still failing, create a new deployment in Apps Script</td></tr>
+  <tr><td>Setup popup doesn't appear</td><td>Script error or permission denied</td><td>Check the Apps Script editor for red errors. Re-authorize if needed</td></tr>
+  <tr><td>"Sheet not found" error</td><td>setup() wasn't run</td><td>Run setup() again from Apps Script</td></tr>
+  <tr><td>Dashboard works but shows no agents</td><td>SHEET_API empty (offline mode)</td><td>Paste the deployment URL into <code>SHEET_API</code> in index.html</td></tr>
+  <tr><td>Changes lost after refresh</td><td>SHEET_API is empty</td><td>Same as above — connect to Google Sheets</td></tr>
+</table>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<h2>PART 8 — Security Notes</h2>
+
+<ul style="margin:8px 0 0 16px;line-height:1.9">
+  <li>The Google Sheet is <strong>private to your Google account</strong> — nobody else can access it unless you share it.</li>
+  <li>The Web App URL acts like a password-protected API — all requests require a valid login token.</li>
+  <li>Change the <code>SECRET</code> value in Code.gs before deploying if you want extra security (then redeploy).</li>
+  <li>Admin passwords should be changed after first login. Update them in the <strong>Users</strong> sheet tab directly.</li>
+  <li>Never share the Web App URL publicly — treat it like a password.</li>
+</ul>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>PART 9 — Transferring Ownership to a New Gmail Account</h2>
+
+<p style="margin-bottom:12px;line-height:1.7">Use this guide when the current owner's Gmail is leaving the organisation, or you need to move the entire system — Google Sheet, Apps Script backend, and dashboard — to a different Google account.</p>
+
+<h3>Phase A — New Owner Creates Their Sheet</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body"><p>New owner signs into Google with <strong>their own Gmail</strong> account.</p></div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Go to <code>sheets.google.com</code> → click <strong>Blank spreadsheet</strong> → name it <strong>CRH WFM</strong> (click the title at the top to rename).</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Click <strong>Extensions → Apps Script</strong> → select all existing code (Ctrl+A) → delete it → paste the full contents of <code>Code.gs</code> → save (Ctrl+S).</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body">
+    <p>In the function dropdown select <strong>setup</strong> → click <strong>Run (▶)</strong> → authorize when prompted → wait for the green <strong>"CRH WFM Setup Complete!"</strong> popup.</p>
+    <div class="ok">✅ You should now see 8 tabs: Users, Agents, Attendance, Rota, Breaks, Leave, Swaps, Config.</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">5</div>
+  <div class="step-body">
+    <p>Click <strong>Deploy → New deployment</strong> → gear icon → <strong>Web app</strong>.</p>
+    <p>Set: <em>Execute as</em> = <strong>Me</strong> · <em>Who has access</em> = <strong>Anyone</strong> → click <strong>Deploy</strong>.</p>
+    <p><strong>Copy the new URL</strong> — it looks like: <code>https://script.google.com/macros/s/AKfycb.../exec</code></p>
+  </div>
+</div>
+
+<h3>Phase B — Update the Dashboard</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Open <code>index.html</code> in <strong>Notepad++</strong> or <strong>VS Code</strong>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>Press <strong>Ctrl+F</strong> and search for <code>const SHEET_API = '</code>.</p>
+    <p>Replace the old URL with the new one you just copied:</p>
+    <div class="code-block">const SHEET_API = 'https://script.google.com/macros/s/YOUR_NEW_ID/exec';</div>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Save <code>index.html</code> (Ctrl+S) → open it in Chrome → test login as <code>yasir</code> / <code>CRH@Admin2026</code>.</p>
+    <div class="ok">✅ A green toast "Synced from Google Sheets ✓" confirms the new connection is working.</div>
+  </div>
+</div>
+
+<h3>Phase C — Migrate Existing Data (if any)</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>In the <strong>OLD</strong> owner's Google Sheet → click the <strong>Attendance</strong> tab → press <strong>Ctrl+A</strong> to select all data → <strong>Ctrl+C</strong> to copy.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>In the <strong>NEW</strong> owner's Google Sheet → click the <strong>Attendance</strong> tab → click cell <strong>A2</strong> → press <strong>Ctrl+V</strong> to paste.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Repeat for the following tabs: <strong>Rota</strong>, <strong>Breaks</strong>, <strong>Leave</strong>, <strong>Swaps</strong>.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">4</div>
+  <div class="step-body">
+    <p><strong>Users</strong> and <strong>Config</strong> tabs are already seeded by setup() — only copy them if you made custom changes in the old sheet.</p>
+  </div>
+</div>
+
+<h3>Phase D — Remove Old Owner's Access</h3>
+
+<div class="step">
+  <div class="num">1</div>
+  <div class="step-body">
+    <p>Old owner goes to their Google Sheet → deletes or archives it. Data is now safely in the new Sheet.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">2</div>
+  <div class="step-body">
+    <p>The old owner's Web App URL is now obsolete — any copy of <code>index.html</code> still pointing to the old URL will fail to connect.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="num">3</div>
+  <div class="step-body">
+    <p>Send the updated <code>index.html</code> file (with the new SHEET_API URL) to all managers and users who have a copy.</p>
+  </div>
+</div>
+
+<div class="warn">⚠️ Passwords and agent credentials stay the same — you do NOT need to reset them. The new Gmail only controls where data is stored, not who can log in to the dashboard.</div>
+
+<div class="info">💡 Tip: The dashboard works offline even without Google Sheets. If SHEET_API is left empty, it uses local in-memory data only (not saved on refresh).</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="footer">
+  <span>CRH WFM Dashboard · Czech Rehabilitation Hospital · Al Ain, UAE</span>
+  <span>Handover Guide · 2026</span>
+</div>
+
+</body>
+</html>
