@@ -429,7 +429,7 @@
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <button class="btn btn-amber btn-sm" onclick="openServiceLevelModal()">⚡ Apply Suggested</button>
-            ${CU?.role === 'admin' ? `<button class="btn btn-ghost btn-sm" onclick="openBreakConfigModal()">⚙ Configure Breaks</button>` : ''}
+            <button id="btnConfigureBreaks" class="btn btn-ghost btn-sm" onclick="openBreakConfigModal()" style="display:none">⚙ Configure Breaks</button>
             <input type="date" id="breakDate" onchange="renderBreakAdmin()" style="width:auto">
             <button class="btn btn-primary btn-sm" onclick="saveBreakSchedule()">Save Schedule</button>
           </div>
@@ -827,6 +827,8 @@ function setupRoleUI(role){
     const required = el.dataset.role.split(',');
     el.style.display = (isAdmin || required.includes(role)) ? '' : 'none';
   });
+  const cfgBtn = document.getElementById('btnConfigureBreaks');
+  if(cfgBtn) cfgBtn.style.display = isAdmin ? '' : 'none';
   if(isAgent){
     document.getElementById('adminBreakPanel').style.display = 'none';
     document.getElementById('agentBreakPanel').style.display = 'block';
