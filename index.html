@@ -1,18 +1,555 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lion Technology - Field Service Management</title>
-  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="/assets/index-jpe2IrbW.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-DyZZAuqD.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FBA Intelligence — Store Command</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <div id="root"></div>
-</body>
 
+<!-- ═══════════════════════════════════════════
+     TOPBAR — always visible, data-first
+═══════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <span class="logo-mark">FBA</span>
+    <span class="logo-divider">|</span>
+    <span class="logo-label">INTELLIGENCE TERMINAL</span>
+  </div>
+  <div class="topbar-center">
+    <div class="market-ticker">
+      <span class="ticker-item tick-up">NET PROFIT (7D) <b>$1,847</b> +12.4%</span>
+      <span class="ticker-sep">·</span>
+      <span class="ticker-item tick-up">REVENUE <b>$6,210</b> +8.1%</span>
+      <span class="ticker-sep">·</span>
+      <span class="ticker-item tick-dn">AVG MARGIN <b>29.7%</b> -1.2%</span>
+      <span class="ticker-sep">·</span>
+      <span class="ticker-item tick-up">UNITS SOLD <b>831</b> +5.6%</span>
+      <span class="ticker-sep">·</span>
+      <span class="ticker-item tick-neutral">BUY BOX <b>81.3%</b> —</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    <span class="sync-time">SYNC 2m ago</span>
+    <span class="alert-count" id="alertBadge">3 ALERTS</span>
+    <div class="range-tabs">
+      <button class="rtab active" onclick="setRange(this,'7D')">7D</button>
+      <button class="rtab" onclick="setRange(this,'30D')">30D</button>
+      <button class="rtab" onclick="setRange(this,'MTD')">MTD</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════
+     SIDEBAR — navigation
+═══════════════════════════════════════════ -->
+<div class="layout">
+<aside class="sidebar">
+  <nav class="nav-group">
+    <div class="nav-section-label">OVERVIEW</div>
+    <a class="nav-item active" onclick="showView('overview')">
+      <span class="nav-icon">▪</span> Dashboard
+    </a>
+    <a class="nav-item" onclick="showView('profit')">
+      <span class="nav-icon">▪</span> Profitability
+    </a>
+    <a class="nav-item" onclick="showView('inventory')">
+      <span class="nav-icon">▪</span> Inventory
+    </a>
+  </nav>
+  <nav class="nav-group">
+    <div class="nav-section-label">AI INTELLIGENCE</div>
+    <a class="nav-item" onclick="showView('ai-insights')">
+      <span class="nav-icon">▪</span> AI Insights
+      <span class="nav-badge new">NEW</span>
+    </a>
+    <a class="nav-item" onclick="showView('pricing')">
+      <span class="nav-icon">▪</span> Price Optimizer
+    </a>
+    <a class="nav-item" onclick="showView('listing')">
+      <span class="nav-icon">▪</span> Listing AI
+    </a>
+    <a class="nav-item" onclick="showView('opportunity')">
+      <span class="nav-icon">▪</span> Opportunities
+    </a>
+  </nav>
+  <nav class="nav-group">
+    <div class="nav-section-label">OPERATIONS</div>
+    <a class="nav-item" onclick="showView('alerts')">
+      <span class="nav-icon">▪</span> Alerts
+      <span class="nav-badge alert">3</span>
+    </a>
+    <a class="nav-item" onclick="showView('reports')">
+      <span class="nav-icon">▪</span> Weekly Reports
+    </a>
+    <a class="nav-item" onclick="showView('health')">
+      <span class="nav-icon">▪</span> Account Health
+    </a>
+    <a class="nav-item phase3" onclick="showView('ads')">
+      <span class="nav-icon">▪</span> Advertising
+      <span class="nav-badge ph3">PH3</span>
+    </a>
+  </nav>
+  <nav class="nav-group">
+    <div class="nav-section-label">SYSTEM</div>
+    <a class="nav-item" onclick="showView('settings')">
+      <span class="nav-icon">▪</span> Settings
+    </a>
+  </nav>
+
+  <div class="sidebar-status">
+    <div class="status-row"><span class="sd">API</span><span class="sv ok">CONNECTED</span></div>
+    <div class="status-row"><span class="sd">GEMINI</span><span class="sv ok">ACTIVE</span></div>
+    <div class="status-row"><span class="sd">TOKEN</span><span class="sv ok">VALID</span></div>
+    <div class="status-row"><span class="sd">MARKET</span><span class="sv">US · UAE</span></div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════════
+     MAIN CONTENT AREA
+═══════════════════════════════════════════ -->
+<main class="main-content">
+
+  <!-- ── VIEW: OVERVIEW ── -->
+  <div class="view active" id="view-overview">
+
+    <!-- Traffic light strip -->
+    <div class="tl-strip">
+      <div class="tl-item">
+        <span class="tl-dot green"></span>
+        <span class="tl-label">NET PROFIT</span>
+        <span class="tl-status green">GOOD</span>
+      </div>
+      <div class="tl-sep">|</div>
+      <div class="tl-item">
+        <span class="tl-dot green"></span>
+        <span class="tl-label">INVENTORY</span>
+        <span class="tl-status green">HEALTHY</span>
+      </div>
+      <div class="tl-sep">|</div>
+      <div class="tl-item">
+        <span class="tl-dot amber"></span>
+        <span class="tl-label">PARACORD MARGIN</span>
+        <span class="tl-status amber">MONITOR</span>
+      </div>
+      <div class="tl-sep">|</div>
+      <div class="tl-item">
+        <span class="tl-dot red"></span>
+        <span class="tl-label">BUY BOX</span>
+        <span class="tl-status red">ACTION REQUIRED</span>
+      </div>
+      <div class="tl-sep">|</div>
+      <div class="tl-item">
+        <span class="tl-dot green"></span>
+        <span class="tl-label">ACCOUNT HEALTH</span>
+        <span class="tl-status green">GOOD</span>
+      </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="kpi-row">
+      <div class="kpi-card accent-green">
+        <div class="kpi-meta">
+          <span class="kpi-label">NET PROFIT</span>
+          <span class="kpi-period">7D</span>
+        </div>
+        <div class="kpi-value">$1,847</div>
+        <div class="kpi-footer">
+          <span class="delta up">▲ 12.4%</span>
+          <span class="kpi-sub">vs last week</span>
+        </div>
+        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,20 13,16 26,14 40,17 53,10 66,7 80,4" fill="none" stroke="var(--green)" stroke-width="1.5"/></svg>
+      </div>
+      <div class="kpi-card accent-blue">
+        <div class="kpi-meta">
+          <span class="kpi-label">TOTAL REVENUE</span>
+          <span class="kpi-period">7D</span>
+        </div>
+        <div class="kpi-value">$6,210</div>
+        <div class="kpi-footer">
+          <span class="delta up">▲ 8.1%</span>
+          <span class="kpi-sub">vs last week</span>
+        </div>
+        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,18 13,15 26,12 40,14 53,9 66,6 80,5" fill="none" stroke="var(--blue)" stroke-width="1.5"/></svg>
+      </div>
+      <div class="kpi-card accent-amber">
+        <div class="kpi-meta">
+          <span class="kpi-label">AVG NET MARGIN</span>
+          <span class="kpi-period">7D</span>
+        </div>
+        <div class="kpi-value">29.7%</div>
+        <div class="kpi-footer">
+          <span class="delta dn">▼ 1.2%</span>
+          <span class="kpi-sub">vs last week</span>
+        </div>
+        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,8 13,9 26,10 40,12 53,14 66,15 80,16" fill="none" stroke="var(--amber)" stroke-width="1.5"/></svg>
+      </div>
+      <div class="kpi-card accent-slate">
+        <div class="kpi-meta">
+          <span class="kpi-label">UNITS SOLD</span>
+          <span class="kpi-period">7D</span>
+        </div>
+        <div class="kpi-value">831</div>
+        <div class="kpi-footer">
+          <span class="delta up">▲ 5.6%</span>
+          <span class="kpi-sub">vs last week</span>
+        </div>
+        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,20 13,17 26,15 40,16 53,11 66,9 80,7" fill="none" stroke="var(--slate)" stroke-width="1.5"/></svg>
+      </div>
+      <div class="kpi-card accent-red">
+        <div class="kpi-meta">
+          <span class="kpi-label">FBA FEES (TOTAL)</span>
+          <span class="kpi-period">7D</span>
+        </div>
+        <div class="kpi-value">$1,117</div>
+        <div class="kpi-footer">
+          <span class="delta dn">▲ 3.2%</span>
+          <span class="kpi-sub">vs last week</span>
+        </div>
+        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,18 13,17 26,16 40,15 53,14 66,13 80,11" fill="none" stroke="var(--red)" stroke-width="1.5"/></svg>
+      </div>
+    </div>
+
+    <!-- Charts + Table row -->
+    <div class="mid-grid">
+
+      <!-- Profit trend chart -->
+      <div class="panel panel-lg">
+        <div class="panel-header">
+          <div class="panel-title">NET PROFIT TREND <span class="panel-sub">— Daily · 14 Days</span></div>
+          <div class="panel-actions">
+            <span class="pact active">LINE</span>
+            <span class="pact">BAR</span>
+          </div>
+        </div>
+        <div class="chart-area">
+          <svg viewBox="0 0 560 120" xmlns="http://www.w3.org/2000/svg" class="trend-svg">
+            <defs>
+              <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <!-- Grid -->
+            <line x1="0" y1="20" x2="560" y2="20" stroke="#1a2542" stroke-width="1"/>
+            <line x1="0" y1="50" x2="560" y2="50" stroke="#1a2542" stroke-width="1"/>
+            <line x1="0" y1="80" x2="560" y2="80" stroke="#1a2542" stroke-width="1"/>
+            <line x1="0" y1="110" x2="560" y2="110" stroke="#1a2542" stroke-width="1"/>
+            <!-- Labels -->
+            <text x="2" y="18" class="chart-label">$350</text>
+            <text x="2" y="48" class="chart-label">$250</text>
+            <text x="2" y="78" class="chart-label">$150</text>
+            <text x="2" y="108" class="chart-label">$50</text>
+            <!-- Fill area -->
+            <path d="M40,90 L80,78 L120,70 L160,75 L200,58 L240,50 L280,62 L320,44 L360,38 L400,46 L440,30 L480,24 L520,20 L560,16 L560,115 L40,115Z" fill="url(#gfill)"/>
+            <!-- Line -->
+            <polyline points="40,90 80,78 120,70 160,75 200,58 240,50 280,62 320,44 360,38 400,46 440,30 480,24 520,20 560,16" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round"/>
+            <!-- Today dot -->
+            <circle cx="560" cy="16" r="3.5" fill="#10b981"/>
+            <line x1="560" y1="16" x2="560" y2="115" stroke="#10b981" stroke-width="0.8" stroke-dasharray="3,3"/>
+            <!-- Day labels -->
+            <text x="37" y="118" class="chart-label">D-14</text>
+            <text x="235" y="118" class="chart-label">D-7</text>
+            <text x="543" y="118" class="chart-label">TODAY</text>
+          </svg>
+        </div>
+        <div class="chart-footer">
+          <span>PEAK <b class="mono green">$348</b> Mon</span>
+          <span>LOW <b class="mono red">$89</b> Sat</span>
+          <span>AVG <b class="mono">$264/day</b></span>
+          <span>TOTAL <b class="mono green">$1,847</b></span>
+        </div>
+      </div>
+
+      <!-- Fee waterfall -->
+      <div class="panel panel-sm">
+        <div class="panel-header">
+          <div class="panel-title">FEE WATERFALL <span class="panel-sub">— This Week</span></div>
+        </div>
+        <div class="waterfall">
+          <div class="wf-row">
+            <span class="wf-label">GROSS REVENUE</span>
+            <div class="wf-bar-wrap"><div class="wf-bar" style="width:100%;background:var(--blue)"></div></div>
+            <span class="wf-val mono blue">$6,210</span>
+          </div>
+          <div class="wf-row">
+            <span class="wf-label">COGS (WAC)</span>
+            <div class="wf-bar-wrap"><div class="wf-bar" style="width:40%;background:var(--red)"></div></div>
+            <span class="wf-val mono red">-$2,484</span>
+          </div>
+          <div class="wf-row">
+            <span class="wf-label">FBA FEES</span>
+            <div class="wf-bar-wrap"><div class="wf-bar" style="width:12%;background:var(--amber)"></div></div>
+            <span class="wf-val mono amber">-$683</span>
+          </div>
+          <div class="wf-row">
+            <span class="wf-label">REFERRAL FEES</span>
+            <div class="wf-bar-wrap"><div class="wf-bar" style="width:7%;background:var(--amber)"></div></div>
+            <span class="wf-val mono amber">-$434</span>
+          </div>
+          <div class="wf-row">
+            <span class="wf-label">AD SPEND</span>
+            <div class="wf-bar-wrap"><div class="wf-bar" style="width:12%;background:var(--slate)"></div></div>
+            <span class="wf-val mono slate">-$762</span>
+          </div>
+          <div class="wf-divider"></div>
+          <div class="wf-row total">
+            <span class="wf-label">NET PROFIT</span>
+            <div class="wf-bar-wrap"><div class="wf-bar" style="width:30%;background:var(--green)"></div></div>
+            <span class="wf-val mono green">$1,847</span>
+          </div>
+          <div class="wf-margin">MARGIN <b class="green">29.7%</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASIN Table -->
+    <div class="panel" style="margin-bottom:12px">
+      <div class="panel-header">
+        <div class="panel-title">PER-ASIN PROFITABILITY <span class="panel-sub">— Net profit after all fees · WAC method</span></div>
+        <div class="panel-actions"><span class="pact active">ALL</span><span class="pact">ACTIVE</span><span class="pact">FLAGGED</span></div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ASIN / PRODUCT</th>
+              <th class="num">REVENUE</th>
+              <th class="num">COGS</th>
+              <th class="num">FBA FEES</th>
+              <th class="num">AD SPEND</th>
+              <th class="num">NET PROFIT</th>
+              <th class="num">MARGIN</th>
+              <th class="num">UNITS</th>
+              <th class="num">DAYS INV</th>
+              <th>STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="asin-name">Measuring Cup Set Pro</div>
+                <div class="asin-id mono">B08XXXX1234</div>
+              </td>
+              <td class="num mono">$3,102</td>
+              <td class="num mono red">$1,241</td>
+              <td class="num mono amber">$434</td>
+              <td class="num mono slate">$380</td>
+              <td class="num mono green bold">$1,047</td>
+              <td class="num mono green">33.7%</td>
+              <td class="num mono">415</td>
+              <td class="num mono green">102d</td>
+              <td><span class="status-pill green">GOOD</span></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="asin-name">Measuring Cup 5-Piece</div>
+                <div class="asin-id mono">B08XXXX5678</div>
+              </td>
+              <td class="num mono">$2,488</td>
+              <td class="num mono red">$995</td>
+              <td class="num mono amber">$348</td>
+              <td class="num mono slate">$345</td>
+              <td class="num mono green bold">$800</td>
+              <td class="num mono green">32.1%</td>
+              <td class="num mono">332</td>
+              <td class="num mono green">87d</td>
+              <td><span class="status-pill green">GOOD</span></td>
+            </tr>
+            <tr class="row-flagged">
+              <td>
+                <div class="asin-name">Paracord Bundle 100m</div>
+                <div class="asin-id mono">B09XXXX9012</div>
+              </td>
+              <td class="num mono">$620</td>
+              <td class="num mono red">$248</td>
+              <td class="num mono amber">$112</td>
+              <td class="num mono slate">$—</td>
+              <td class="num mono amber bold">$—</td>
+              <td class="num mono amber">19.4% ▼</td>
+              <td class="num mono">84</td>
+              <td class="num mono amber">56d !</td>
+              <td><span class="status-pill amber">MONITOR</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bottom row: Inventory + Alerts -->
+    <div class="bottom-grid">
+
+      <!-- Inventory -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">INVENTORY — DAYS OF SUPPLY <span class="panel-sub">80d threshold</span></div>
+          <span class="panel-link">VIEW ALL →</span>
+        </div>
+        <div class="inv-list">
+          <div class="inv-row">
+            <div class="inv-info">
+              <span class="inv-name">Measuring Cup Set Pro</span>
+              <span class="inv-sku mono">B08XXXX1234</span>
+            </div>
+            <div class="inv-bar-wrap">
+              <div class="inv-bar green" style="width:85%"></div>
+            </div>
+            <span class="inv-days mono green">102d</span>
+            <span class="status-pill green sm">OK</span>
+          </div>
+          <div class="inv-row">
+            <div class="inv-info">
+              <span class="inv-name">Measuring Cup 5-Piece</span>
+              <span class="inv-sku mono">B08XXXX5678</span>
+            </div>
+            <div class="inv-bar-wrap">
+              <div class="inv-bar green" style="width:72%"></div>
+            </div>
+            <span class="inv-days mono green">87d</span>
+            <span class="status-pill green sm">OK</span>
+          </div>
+          <div class="inv-row flagged">
+            <div class="inv-info">
+              <span class="inv-name">Paracord Bundle 100m</span>
+              <span class="inv-sku mono">B09XXXX9012</span>
+            </div>
+            <div class="inv-bar-wrap">
+              <div class="inv-bar amber" style="width:38%"></div>
+            </div>
+            <span class="inv-days mono amber">56d</span>
+            <span class="status-pill amber sm">REORDER</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Alerts -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">ACTIVE ALERTS</div>
+          <span class="alert-count-sm">3 OPEN</span>
+        </div>
+        <div class="alert-list">
+          <div class="alert-row critical">
+            <div class="alert-severity">CRIT</div>
+            <div class="alert-body">
+              <div class="alert-title">BUY BOX LOST — Paracord Bundle</div>
+              <div class="alert-desc">Unknown seller B07XYZ winning at $6.89. Verify hijacker via Brand Registry.</div>
+            </div>
+            <div class="alert-time mono">14m</div>
+          </div>
+          <div class="alert-row warning">
+            <div class="alert-severity">WARN</div>
+            <div class="alert-body">
+              <div class="alert-title">MARGIN ALERT — Paracord Bundle</div>
+              <div class="alert-desc">Net margin 19.4% — below 20% threshold. Review pricing or COGS.</div>
+            </div>
+            <div class="alert-time mono">2h</div>
+          </div>
+          <div class="alert-row warning">
+            <div class="alert-severity">WARN</div>
+            <div class="alert-body">
+              <div class="alert-title">REORDER NEEDED — Paracord Bundle</div>
+              <div class="alert-desc">56d supply. Reorder 200 units within 14 days based on velocity.</div>
+            </div>
+            <div class="alert-time mono">Today</div>
+          </div>
+          <div class="alert-row info">
+            <div class="alert-severity">INFO</div>
+            <div class="alert-body">
+              <div class="alert-title">FBA SHIPMENT ARRIVED — SHIP-001</div>
+              <div class="alert-desc">320 units checked in at ONT8 warehouse successfully.</div>
+            </div>
+            <div class="alert-time mono">Yest.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gemini AI Insight -->
+      <div class="panel ai-panel">
+        <div class="panel-header">
+          <div class="panel-title">GEMINI AI <span class="panel-sub">— Weekly Insight</span></div>
+          <span class="ai-model mono">gemini-2.0-flash</span>
+        </div>
+        <div class="ai-body">
+          <p>
+            <b class="green">Measuring Cup Set Pro</b> is your strongest performer at 33.7% margin.
+            <b class="amber">Paracord Bundle</b> has compounding pressure: margin below threshold + suspected hijacker + inventory nearing reorder point — these three signals together suggest urgent action.
+          </p>
+          <p style="margin-top:10px">
+            <b>Income opportunity:</b> Raising Measuring Cup Set Pro price by $0.50 would add approximately <b class="green">+$207 net profit</b> this week with minimal conversion impact based on current velocity.
+          </p>
+          <p style="margin-top:10px">
+            <b>Market signal:</b> Home &amp; Kitchen measuring category shows +14% YoY growth. Your two cup products are positioned to capture further share if inventory is maintained above 90d.
+          </p>
+        </div>
+        <div class="ai-footer">
+          <span class="mono">Generated Mon 09:00 · Next Monday 09:00</span>
+          <button class="ai-refresh-btn">REFRESH NOW</button>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /view-overview -->
+
+  <!-- ── VIEW: AI INSIGHTS (placeholder) ── -->
+  <div class="view" id="view-ai-insights">
+    <div class="view-placeholder">
+      <div class="vp-label">AI INTELLIGENCE HUB</div>
+      <div class="vp-desc">Gemini-powered analysis across all 5 business dimensions.<br>Income generation · Market research · Listing optimization · Data patterns · FBA logic</div>
+      <div class="vp-skills">
+        <span class="skill-tag">Income Generation</span>
+        <span class="skill-tag">Market Research</span>
+        <span class="skill-tag">Marketing Content</span>
+        <span class="skill-tag">Data Analysis</span>
+        <span class="skill-tag">Ecommerce FBA</span>
+      </div>
+      <div class="vp-note mono">Module connected to Gemini API · Rendered dynamically at runtime</div>
+    </div>
+  </div>
+
+  <!-- ── VIEW: PRICING OPTIMIZER (placeholder) ── -->
+  <div class="view" id="view-pricing">
+    <div class="view-placeholder">
+      <div class="vp-label">PRICE OPTIMIZER</div>
+      <div class="vp-desc">AI pricing suggestions based on sales velocity, margin targets, and Buy Box data.<br>Skill: Income Generation — revenue optimization layer</div>
+      <div class="vp-note mono">Powered by Gemini · SP-API Catalog + Finances API</div>
+    </div>
+  </div>
+
+  <!-- ── VIEW: LISTING AI (placeholder) ── -->
+  <div class="view" id="view-listing">
+    <div class="view-placeholder">
+      <div class="vp-label">LISTING OPTIMIZER</div>
+      <div class="vp-desc">AI rewrites titles, bullet points, and descriptions based on performance data and keyword signals.<br>Skill: Marketing Content — conversion-focused copy generation</div>
+      <div class="vp-note mono">Powered by Gemini · SP-API Catalog API · Phase 2</div>
+    </div>
+  </div>
+
+  <!-- ── VIEW: OPPORTUNITIES (placeholder) ── -->
+  <div class="view" id="view-opportunity">
+    <div class="view-placeholder">
+      <div class="vp-label">OPPORTUNITY SCANNER</div>
+      <div class="vp-desc">Detects underperforming ASINs with growth potential using market signals and velocity analysis.<br>Skill: Market Research — competitive opportunity detection</div>
+      <div class="vp-note mono">Powered by Gemini · SP-API Sales + Catalog API · Phase 2</div>
+    </div>
+  </div>
+
+  <!-- ── ALL OTHER VIEWS (placeholder) ── -->
+  <div class="view" id="view-profit"><div class="view-placeholder"><div class="vp-label">PROFITABILITY DRILL-DOWN</div><div class="vp-desc">Full ASIN-level P&amp;L with WAC COGS method, fee breakdown, and margin trend lines.</div></div></div>
+  <div class="view" id="view-inventory"><div class="view-placeholder"><div class="vp-label">INVENTORY MANAGEMENT</div><div class="vp-desc">Real-time stock levels, 80-day threshold alerts, reorder engine, stranded inventory, sell-through rates.</div></div></div>
+  <div class="view" id="view-alerts"><div class="view-placeholder"><div class="vp-label">ALERTS CENTER</div><div class="vp-desc">All active alerts — Buy Box, margin, inventory, FBA shipment, account health. Email delivered.</div></div></div>
+  <div class="view" id="view-reports"><div class="view-placeholder"><div class="vp-label">WEEKLY REPORTS</div><div class="vp-desc">Auto-generated Monday reports: P&amp;L, Inventory, Account Health, Listing. Delivered to email.</div></div></div>
+  <div class="view" id="view-health"><div class="view-placeholder"><div class="vp-label">ACCOUNT HEALTH</div><div class="vp-desc">ODR, Late Shipment Rate, Buy Box %, active policy violations. Early warning before violations.</div></div></div>
+  <div class="view" id="view-ads"><div class="view-placeholder"><div class="vp-label">ADVERTISING DASHBOARD <span style="color:var(--amber)">— PHASE 3</span></div><div class="vp-desc">ACoS, TACoS, ROAS, wasted spend, dayparting heatmap, bid suggestions.<br>Requires Amazon Advertising API approval (apply at advertising.amazon.com → Tools → API).</div></div></div>
+  <div class="view" id="view-settings"><div class="view-placeholder"><div class="vp-label">SETTINGS</div><div class="vp-desc">API credentials, alert thresholds, margin targets, email configuration, Gemini API key.</div></div></div>
+
+</main>
+</div><!-- /layout -->
+
+<script src="app.js"></script>
+</body>
 </html>
