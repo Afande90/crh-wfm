@@ -7,9 +7,7 @@ const LWA_TOKEN_URL = 'https://api.amazon.com/auth/o2/token';
 const MARKETPLACE_US = 'ATVPDKIKX0DER';
 
 function spBase() {
-  return process.env.SP_API_SANDBOX === 'true'
-    ? 'https://sandbox.sellingpartnerapi-na.amazon.com'
-    : 'https://sellingpartnerapi-na.amazon.com';
+  return 'https://sandbox.sellingpartnerapi-na.amazon.com';
 }
 
 async function getLWAToken() {
