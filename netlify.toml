@@ -1,0 +1,22 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# ── Required environment variables ──────────────────────────────────────
+# Set these in the Netlify dashboard → Site settings → Environment variables
+# (never put real values here — they belong in the dashboard or .env locally)
+#
+#   SP_API_CLIENT_ID      = "amzn1.application-oa2-client...."
+#   SP_API_CLIENT_SECRET  = "amzn1.oa2-cs.v1...."
+#   SP_API_REFRESH_TOKEN  = "Atzr|..."
+#   SP_API_SANDBOX        = "true"   ← set to "false" for production
+# ────────────────────────────────────────────────────────────────────────
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options        = "DENY"
