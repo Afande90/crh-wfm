@@ -45,7 +45,9 @@ function fmt(n) {
 
 function renderDashboard(d) {
   const { kpis, inventory } = d;
-  if (kpis) {
+  // Only overwrite the dashboard if the sandbox actually returned sales data.
+  // An empty sandbox response (revenue 0) would otherwise blank out the demo.
+  if (kpis && kpis.revenue > 0) {
     updateKPICards(kpis);
     updateTicker(kpis);
     updateWaterfall(kpis);

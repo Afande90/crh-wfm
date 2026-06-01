@@ -54,8 +54,15 @@ async function spFetch(token, path, params = {}) {
   return json;
 }
 
-function daysAgo(n) {
-  return new Date(Date.now() - n * 86_400_000).toISOString();
+// Resolve a fetch but never throw — returns null on failure so one bad
+// endpoint doesn't take down the whole dashboard.
+async function spFetchSafe(token, path, params) {
+  try {
+    return await spFetch(token, path, params);
+  } catch (err) {
+    console.warn('[sp-api-data] endpoint failed:', path, '-', err.message);
+    return null;
+  }
 }
 
 exports.handler = async (event) => {
@@ -70,24 +77,26 @@ exports.handler = async (event) => {
 
   try {
     const range = event.queryStringParameters?.range || '7D';
-    const days = range === '30D' ? 30 : range === 'MTD' ? new Date().getDate() : 7;
-    const createdAfter = daysAgo(days);
 
+    // The SP-API SANDBOX only returns data for Amazon's documented "magic"
+    // test values — real timestamps are rejected with "Could not match input
+    // arguments". These TEST_CASE_200 values trigger the canned 200 responses.
     const token = await getLWAToken();
 
     const [ordersRes, inventoryRes, financeRes] = await Promise.all([
-      spFetch(token, '/orders/v0/orders', {
+      spFetchSafe(token, '/orders/v0/orders', {
         MarketplaceIds: MARKETPLACE_US,
-        CreatedAfter: createdAfter,
+        CreatedAfter: 'TEST_CASE_200',
       }),
-      spFetch(token, '/fba/inventory/v1/summaries', {
+      spFetchSafe(token, '/fba/inventory/v1/summaries', {
+        details: 'true',
         granularityType: 'Marketplace',
         granularityId: MARKETPLACE_US,
         marketplaceIds: MARKETPLACE_US,
       }),
-      spFetch(token, '/finances/v0/financialEventGroups', {
-        FinancialEventGroupStartedAfter: createdAfter,
-        MaxResultsPerPage: 30,
+      spFetchSafe(token, '/finances/v0/financialEventGroups', {
+        MaxResultsPerPage: 10,
+        FinancialEventGroupStartedBefore: 'TEST_CASE_200',
       }),
     ]);
 
@@ -114,12 +123,20 @@ exports.handler = async (event) => {
     const netProfit = revenue - cogs - fbaFees - adSpend;
     const margin = revenue > 0 ? +((netProfit / revenue) * 100).toFixed(1) : 0;
 
+    // Report which endpoints actually returned so the UI can tell live vs empty
+    const sources = {
+      orders: !!ordersRes,
+      inventory: !!inventoryRes,
+      finances: !!financeRes,
+    };
+
     return {
       statusCode: 200,
       headers: cors,
       body: JSON.stringify({
         success: true,
         range,
+        sources,
         kpis: {
           revenue: Math.round(revenue),
           netProfit: Math.round(netProfit),
