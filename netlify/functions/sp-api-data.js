@@ -11,11 +11,20 @@ function spBase() {
 }
 
 async function getLWAToken() {
+  const clientId = (process.env.SP_API_CLIENT_ID || '').trim();
+  const clientSecret = (process.env.SP_API_CLIENT_SECRET || '').trim();
+  const refreshToken = (process.env.SP_API_REFRESH_TOKEN || '').trim();
+
+  console.log('[LWA] client_id present:', !!clientId, 'length:', clientId.length);
+  console.log('[LWA] client_secret present:', !!clientSecret, 'length:', clientSecret.length);
+  console.log('[LWA] refresh_token present:', !!refreshToken, 'length:', refreshToken.length);
+  console.log('[LWA] client_id starts with:', clientId.substring(0, 30));
+
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
-    refresh_token: process.env.SP_API_REFRESH_TOKEN,
-    client_id: process.env.SP_API_CLIENT_ID,
-    client_secret: process.env.SP_API_CLIENT_SECRET,
+    refresh_token: refreshToken,
+    client_id: clientId,
+    client_secret: clientSecret,
   });
 
   const res = await fetch(LWA_TOKEN_URL, {
