@@ -83,7 +83,7 @@ exports.handler = async (event) => {
     // arguments". These TEST_CASE_200 values trigger the canned 200 responses.
     const token = await getLWAToken();
 
-    const [ordersRes, inventoryRes, financeRes] = await Promise.all([
+    const [ordersRes, inventoryRes] = await Promise.all([
       spFetchSafe(token, '/orders/v0/orders', {
         MarketplaceIds: MARKETPLACE_US,
         CreatedAfter: 'TEST_CASE_200',
@@ -94,15 +94,11 @@ exports.handler = async (event) => {
         granularityId: MARKETPLACE_US,
         marketplaceIds: MARKETPLACE_US,
       }),
-      spFetchSafe(token, '/finances/v0/financialEventGroups', {
-        MaxResultsPerPage: 10,
-        FinancialEventGroupStartedBefore: 'TEST_CASE_200',
-      }),
     ]);
 
     const orders = ordersRes?.payload?.Orders || [];
     const inventory = inventoryRes?.payload?.inventorySummaries || [];
-    const financeGroups = financeRes?.payload?.FinancialEventGroupList || [];
+    const financeGroups = [];
 
     // Aggregate revenue and units from orders
     const revenue = orders.reduce((s, o) => s + parseFloat(o.OrderTotal?.Amount || 0), 0);
@@ -127,7 +123,6 @@ exports.handler = async (event) => {
     const sources = {
       orders: !!ordersRes,
       inventory: !!inventoryRes,
-      finances: !!financeRes,
     };
 
     return {
