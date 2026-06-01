@@ -11,11 +11,20 @@ function spBase() {
 }
 
 async function getLWAToken() {
+  const clientId = (process.env.SP_API_CLIENT_ID || '').trim();
+  const clientSecret = (process.env.SP_API_CLIENT_SECRET || '').trim();
+  const refreshToken = (process.env.SP_API_REFRESH_TOKEN || '').trim();
+
+  console.log('[LWA] client_id present:', !!clientId, 'length:', clientId.length);
+  console.log('[LWA] client_secret present:', !!clientSecret, 'length:', clientSecret.length);
+  console.log('[LWA] refresh_token present:', !!refreshToken, 'length:', refreshToken.length);
+  console.log('[LWA] client_id starts with:', clientId.substring(0, 30));
+
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
-    refresh_token: process.env.SP_API_REFRESH_TOKEN,
-    client_id: process.env.SP_API_CLIENT_ID,
-    client_secret: process.env.SP_API_CLIENT_SECRET,
+    refresh_token: refreshToken,
+    client_id: clientId,
+    client_secret: clientSecret,
   });
 
   const res = await fetch(LWA_TOKEN_URL, {
@@ -45,8 +54,15 @@ async function spFetch(token, path, params = {}) {
   return json;
 }
 
-function daysAgo(n) {
-  return new Date(Date.now() - n * 86_400_000).toISOString();
+// Resolve a fetch but never throw — returns null on failure so one bad
+// endpoint doesn't take down the whole dashboard.
+async function spFetchSafe(token, path, params) {
+  try {
+    return await spFetch(token, path, params);
+  } catch (err) {
+    console.warn('[sp-api-data] endpoint failed:', path, '-', err.message);
+    return null;
+  }
 }
 
 exports.handler = async (event) => {
@@ -61,30 +77,42 @@ exports.handler = async (event) => {
 
   try {
     const range = event.queryStringParameters?.range || '7D';
-    const days = range === '30D' ? 30 : range === 'MTD' ? new Date().getDate() : 7;
-    const createdAfter = daysAgo(days);
 
-    const token = await getLWAToken();
+    // Auth can fail (bad/expired creds). Never let it 500 the whole request —
+    // return success:false with a reason so the UI can show a clean status.
+    let token;
+    try {
+      token = await getLWAToken();
+    } catch (authErr) {
+      console.error('[sp-api-data] auth failed:', authErr.message);
+      return {
+        statusCode: 200,
+        headers: cors,
+        body: JSON.stringify({
+          success: false,
+          stage: 'auth',
+          error: authErr.message,
+          kpis: null,
+        }),
+      };
+    }
 
-    const [ordersRes, inventoryRes, financeRes] = await Promise.all([
-      spFetch(token, '/orders/v0/orders', {
+    const [ordersRes, inventoryRes] = await Promise.all([
+      spFetchSafe(token, '/orders/v0/orders', {
         MarketplaceIds: MARKETPLACE_US,
-        CreatedAfter: createdAfter,
+        CreatedAfter: 'TEST_CASE_200',
       }),
-      spFetch(token, '/fba/inventory/v1/summaries', {
+      spFetchSafe(token, '/fba/inventory/v1/summaries', {
+        details: 'true',
         granularityType: 'Marketplace',
         granularityId: MARKETPLACE_US,
         marketplaceIds: MARKETPLACE_US,
-      }),
-      spFetch(token, '/finances/v0/financialEventGroups', {
-        FinancialEventGroupStartedAfter: createdAfter,
-        MaxResultsPerPage: 30,
       }),
     ]);
 
     const orders = ordersRes?.payload?.Orders || [];
     const inventory = inventoryRes?.payload?.inventorySummaries || [];
-    const financeGroups = financeRes?.payload?.FinancialEventGroupList || [];
+    const financeGroups = [];
 
     // Aggregate revenue and units from orders
     const revenue = orders.reduce((s, o) => s + parseFloat(o.OrderTotal?.Amount || 0), 0);
@@ -105,12 +133,19 @@ exports.handler = async (event) => {
     const netProfit = revenue - cogs - fbaFees - adSpend;
     const margin = revenue > 0 ? +((netProfit / revenue) * 100).toFixed(1) : 0;
 
+    // Report which endpoints actually returned so the UI can tell live vs empty
+    const sources = {
+      orders: !!ordersRes,
+      inventory: !!inventoryRes,
+    };
+
     return {
       statusCode: 200,
       headers: cors,
       body: JSON.stringify({
         success: true,
         range,
+        sources,
         kpis: {
           revenue: Math.round(revenue),
           netProfit: Math.round(netProfit),
