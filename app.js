@@ -22,7 +22,14 @@ async function fetchData(range) {
   try {
     const res  = await fetch(`/.netlify/functions/sp-api-data?range=${range}`);
     const json = await res.json();
-    if (!json.success) throw new Error(json.error || 'API returned failure');
+
+    if (!json.success) {
+      // Sandbox/credentials not returning data yet — keep the demo numbers
+      // on screen and show a neutral status instead of a hard error.
+      console.info('[FBA] live data unavailable:', json.error || 'no data');
+      setSyncStatus('demo');
+      return;
+    }
 
     state.data = json;
     renderDashboard(json);
@@ -31,8 +38,8 @@ async function fetchData(range) {
     const syncEl = document.querySelector('.sync-time');
     if (syncEl) syncEl.textContent = 'SYNC just now';
   } catch (err) {
-    console.error('[FBA] fetch error:', err.message);
-    setSyncStatus('error');
+    console.info('[FBA] running on demo data:', err.message);
+    setSyncStatus('demo');
   } finally {
     state.loading = false;
   }
@@ -146,6 +153,9 @@ function setSyncStatus(status) {
   } else if (status === 'syncing') {
     if (live) live.innerHTML = '<span class="live-dot" style="background:var(--amber)"></span>SYNCING';
     if (sv) { sv.textContent = 'SYNCING'; sv.className = 'sv'; }
+  } else if (status === 'demo') {
+    if (live) live.innerHTML = '<span class="live-dot" style="background:var(--amber)"></span>DEMO';
+    if (sv) { sv.textContent = 'DEMO DATA'; sv.className = 'sv'; }
   } else {
     if (live) live.innerHTML = '<span class="live-dot" style="background:var(--red)"></span>ERROR';
     if (sv) { sv.textContent = 'ERROR'; sv.className = 'sv'; }

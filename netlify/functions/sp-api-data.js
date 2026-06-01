@@ -78,10 +78,24 @@ exports.handler = async (event) => {
   try {
     const range = event.queryStringParameters?.range || '7D';
 
-    // The SP-API SANDBOX only returns data for Amazon's documented "magic"
-    // test values — real timestamps are rejected with "Could not match input
-    // arguments". These TEST_CASE_200 values trigger the canned 200 responses.
-    const token = await getLWAToken();
+    // Auth can fail (bad/expired creds). Never let it 500 the whole request —
+    // return success:false with a reason so the UI can show a clean status.
+    let token;
+    try {
+      token = await getLWAToken();
+    } catch (authErr) {
+      console.error('[sp-api-data] auth failed:', authErr.message);
+      return {
+        statusCode: 200,
+        headers: cors,
+        body: JSON.stringify({
+          success: false,
+          stage: 'auth',
+          error: authErr.message,
+          kpis: null,
+        }),
+      };
+    }
 
     const [ordersRes, inventoryRes] = await Promise.all([
       spFetchSafe(token, '/orders/v0/orders', {
