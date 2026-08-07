@@ -463,12 +463,23 @@ function reflectKeyStatus() {
 const API_STAFF = '/.netlify/functions/staff';
 
 async function staffApi(action, payload = {}) {
-  const res = await fetch(API_STAFF, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, token: getSession()?.token, ...payload }),
-  });
-  return res.json();
+  // Never hang the UI: a cold function + a waking database can be slow, so
+  // give every call a hard 12s ceiling and surface a clean error instead.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch(API_STAFF, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, token: getSession()?.token, ...payload }),
+      signal: ctrl.signal,
+    });
+    return await res.json();
+  } catch (err) {
+    return { success: false, error: err.name === 'AbortError' ? 'the house is waking — try once more' : err.message };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function getStaff() {
@@ -568,30 +579,37 @@ function getSession() {
   catch { return null; }
 }
 
+function showGateForm(hasKeeper) {
+  document.getElementById('gateSetup').hidden = hasKeeper;
+  document.getElementById('gateLogin').hidden = !hasKeeper;
+}
+
 async function gateShow() {
   const gate = document.getElementById('gate');
   if (!gate) return;
 
-  let hasKeeper;
-  const status = await staffApi('status').catch(() => null);
+  // Reveal a form IMMEDIATELY so the door is never blank — optimistically
+  // the setup form, or the login form if this browser already knows a keeper.
+  const knownKeeper = getStaff().some(p => p.passHash);
+  showGateForm(knownKeeper);
+  gate.hidden = false;
+  gate.style.display = 'flex';
+  document.body.classList.add('gated');
+
+  // Then confirm with the backend in the background and swap if needed.
+  const status = await staffApi('status');
   if (status?.success) {
     state.localAuth = false;
-    hasKeeper = status.hasKeeper;
+    showGateForm(status.hasKeeper);
   } else {
-    // Backend unreachable — keep the browser-only book working.
-    state.localAuth = true;
-    hasKeeper = getStaff().some(p => p.passHash);
+    state.localAuth = true; // browser-only fallback
+    showGateForm(knownKeeper);
   }
-
-  document.getElementById('gateSetup').hidden = hasKeeper;
-  document.getElementById('gateLogin').hidden = !hasKeeper;
-  gate.hidden = false;
-  document.body.classList.add('gated');
 }
 
 function gateHide(session) {
   const gate = document.getElementById('gate');
-  if (gate) gate.hidden = true;
+  if (gate) { gate.hidden = true; gate.style.display = 'none'; }
   document.body.classList.remove('gated');
   if (session) setText('mastReader', `KEPT BY ${session.name.toUpperCase()}`);
 }
