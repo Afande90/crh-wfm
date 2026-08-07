@@ -60,8 +60,9 @@ async function fetchData(range) {
 
     // Sandbox test orders carry no real sales history — print scaled
     // demonstration figures but keep whatever the wire genuinely sent
-    // (orders, inventory). Production figures print as-is.
-    if (!sandbox && json.kpis?.revenue > 0) applyFigures(json.kpis);
+    // (orders, inventory). Production figures print as-is, zeros included:
+    // a quiet week is still the truth.
+    if (!sandbox && json.kpis) applyFigures(json.kpis);
     else applyFigures(demoKpis(range));
 
     if (json.inventory?.length) updateShelf(json.inventory);
