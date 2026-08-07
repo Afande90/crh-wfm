@@ -10,6 +10,46 @@
 </head>
 <body>
 
+<!-- ══════════ THE COUNTER — sign the book to enter ══════════ -->
+<div class="gate" id="gate" hidden>
+  <div class="gate-card">
+    <div class="gate-rule"></div>
+    <h1 class="gate-title">The Storefront Ledger</h1>
+    <p class="gate-sub mono">PRIVATE CIRCULATION · SIGN THE BOOK TO ENTER</p>
+
+    <!-- First run: set the Proprietor's passcode -->
+    <form class="gate-form" id="gateSetup" hidden onsubmit="return gateCreate(event)">
+      <p class="gate-note">The book has no keeper yet. Set the Proprietor's passcode to open the house.</p>
+      <div class="field">
+        <label class="field-label" for="setupName">Your name</label>
+        <input class="field-input" type="text" id="setupName" placeholder="e.g. Abdall Hassan" autocomplete="name">
+      </div>
+      <div class="field">
+        <label class="field-label" for="setupPass">Choose a passcode</label>
+        <input class="field-input mono" type="password" id="setupPass" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button class="btn-save gate-btn" type="submit">Open the house</button>
+      <p class="settings-status mono" id="setupStatus"></p>
+    </form>
+
+    <!-- Normal entry -->
+    <form class="gate-form" id="gateLogin" hidden onsubmit="return gateEnter(event)">
+      <div class="field">
+        <label class="field-label" for="loginName">Name or email</label>
+        <input class="field-input" type="text" id="loginName" autocomplete="username">
+      </div>
+      <div class="field">
+        <label class="field-label" for="loginPass">Passcode</label>
+        <input class="field-input mono" type="password" id="loginPass" autocomplete="current-password">
+      </div>
+      <button class="btn-save gate-btn" type="submit">Sign in</button>
+      <p class="settings-status mono" id="loginStatus"></p>
+    </form>
+
+    <p class="gate-foot mono">Kept in this browser until the house backend is connected.</p>
+  </div>
+</div>
+
 <!-- ══════════ MASTHEAD ══════════ -->
 <header class="masthead">
   <div class="mast-rule-top"></div>
@@ -30,6 +70,9 @@
     <span>Midnight Edition</span>
     <span class="mast-dot">·</span>
     <span id="mastMode" class="mono">SANDBOX</span>
+    <span class="mast-dot">·</span>
+    <span id="mastReader" class="mono">—</span>
+    <button class="signout" onclick="gateSignOut()">SIGN OUT</button>
   </div>
 
   <!-- ── TABS ── -->
@@ -317,6 +360,10 @@
             <option value="Clerk">Clerk — shelf and orders only</option>
             <option value="Reader">Reader — may look, may not touch</option>
           </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="staffPass">Passcode <span class="field-hint">(they sign in with this)</span></label>
+          <input class="field-input mono" type="password" id="staffPass" placeholder="••••••••" autocomplete="new-password">
         </div>
         <div class="settings-actions">
           <button class="btn-save" onclick="addStaff()">Enter in the registry</button>
