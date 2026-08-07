@@ -6,7 +6,7 @@
 
 'use strict';
 
-const state = { activeRange: '7D', loading: false, lastKpis: null, meta: null };
+const state = { activeRange: '7D', loading: false, lastKpis: null, meta: null, localAuth: false };
 
 const RANGE_WORDS = { '7D': 'THIS WEEK', '30D': 'THIS MONTH', 'MTD': 'MONTH TO DATE' };
 
@@ -458,6 +458,19 @@ function reflectKeyStatus() {
 }
 
 // ─── ADMINISTRATION: STAFF REGISTRY ──────────────────
+// Server-backed (Supabase via /staff function); falls back to the
+// in-browser book only if the backend is unreachable.
+const API_STAFF = '/.netlify/functions/staff';
+
+async function staffApi(action, payload = {}) {
+  const res = await fetch(API_STAFF, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, token: getSession()?.token, ...payload }),
+  });
+  return res.json();
+}
+
 function getStaff() {
   try {
     const s = JSON.parse(localStorage.getItem(LS_STAFF) || 'null');
@@ -475,22 +488,33 @@ function roleClass(role) {
   return { 'Proprietor': 'proprietor', 'Keeper of Books': 'keeper', 'Clerk': 'clerk', 'Reader': 'reader' }[role] || 'reader';
 }
 
-function renderStaff() {
-  const list = document.getElementById('registryList');
-  if (!list) return;
-  const staff = getStaff();
-
-  list.innerHTML = staff.length
+function staffRows(staff, removable) {
+  return staff.length
     ? staff.map((p, i) => `<div class="registry-row">
   <div class="rr-who">
     <div class="rr-name">${esc(p.name)}</div>
     <div class="rr-email">${esc(p.email || '')}</div>
   </div>
   <span class="rr-role ${roleClass(p.role)}">${esc(p.role)}</span>
-  <button class="rr-remove" onclick="removeStaff(${i})" title="Strike from the book">strike</button>
+  ${removable ? `<button class="rr-remove" onclick="removeStaff('${esc(p.id ?? i)}')" title="Strike from the book">strike</button>` : ''}
 </div>`).join('')
     : '<div class="registry-empty">The book is empty — enter the first name.</div>';
+}
 
+async function renderStaff() {
+  const list = document.getElementById('registryList');
+  if (!list) return;
+
+  if (!state.localAuth) {
+    const json = await staffApi('list').catch(() => null);
+    if (json?.success) {
+      list.innerHTML = staffRows(json.staff, true);
+      setText('boardStaff', String(json.staff.length));
+      return;
+    }
+  }
+  const staff = getStaff();
+  list.innerHTML = staffRows(staff, true);
   setText('boardStaff', String(staff.length));
 }
 
@@ -500,31 +524,42 @@ async function addStaff() {
   const role = document.getElementById('staffRole')?.value || 'Reader';
   const pass = document.getElementById('staffPass')?.value || '';
   const status = document.getElementById('staffStatus');
+  const say = (msg, color) => { if (status) { status.textContent = msg; status.style.color = color; } };
 
-  if (!name) {
-    if (status) { status.textContent = 'A name is required to enter the book.'; status.style.color = 'var(--spent)'; }
-    return;
+  if (!name) return say('A name is required to enter the book.', 'var(--spent)');
+  if (pass.length < 4) return say('A passcode of at least 4 characters is required — they sign in with it.', 'var(--spent)');
+
+  if (!state.localAuth) {
+    const json = await staffApi('add', { name, email, role, pass }).catch(e => ({ success: false, error: e.message }));
+    if (!json.success) return say(json.error || 'The book refused the entry.', 'var(--spent)');
+  } else {
+    const staff = getStaff();
+    staff.push({ name, email, role, passHash: await sha256(pass) });
+    saveStaff(staff);
   }
-  if (pass.length < 4) {
-    if (status) { status.textContent = 'A passcode of at least 4 characters is required — they sign in with it.'; status.style.color = 'var(--spent)'; }
-    return;
-  }
-  const staff = getStaff();
-  staff.push({ name, email, role, passHash: await sha256(pass) });
-  saveStaff(staff);
 
   ['staffName', 'staffEmail', 'staffPass'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  if (status) { status.textContent = `${name} entered as ${role}. They can now sign in.`; status.style.color = 'var(--kept)'; }
+  say(`${name} entered as ${role}. They can now sign in.`, 'var(--kept)');
+  renderStaff();
 }
 
-function removeStaff(index) {
-  const staff = getStaff();
-  const [gone] = staff.splice(index, 1);
-  saveStaff(staff);
+async function removeStaff(idOrIndex) {
   const status = document.getElementById('staffStatus');
-  if (status && gone) { status.textContent = `${gone.name} struck from the book.`; status.style.color = 'var(--ink-faint)'; }
+  if (!state.localAuth) {
+    const json = await staffApi('remove', { id: idOrIndex }).catch(e => ({ success: false, error: e.message }));
+    if (status) {
+      status.textContent = json.success ? 'Struck from the book.' : (json.error || 'The book refused.');
+      status.style.color = json.success ? 'var(--ink-faint)' : 'var(--spent)';
+    }
+  } else {
+    const staff = getStaff();
+    const [gone] = staff.splice(Number(idOrIndex), 1);
+    saveStaff(staff);
+    if (status && gone) { status.textContent = `${gone.name} struck from the book.`; status.style.color = 'var(--ink-faint)'; }
+  }
+  renderStaff();
 }
 
 // ─── THE GATE — sign the book to enter ───────────────
@@ -533,11 +568,21 @@ function getSession() {
   catch { return null; }
 }
 
-function gateShow() {
+async function gateShow() {
   const gate = document.getElementById('gate');
   if (!gate) return;
-  const staff = getStaff();
-  const hasKeeper = staff.some(p => p.passHash);
+
+  let hasKeeper;
+  const status = await staffApi('status').catch(() => null);
+  if (status?.success) {
+    state.localAuth = false;
+    hasKeeper = status.hasKeeper;
+  } else {
+    // Backend unreachable — keep the browser-only book working.
+    state.localAuth = true;
+    hasKeeper = getStaff().some(p => p.passHash);
+  }
+
   document.getElementById('gateSetup').hidden = hasKeeper;
   document.getElementById('gateLogin').hidden = !hasKeeper;
   gate.hidden = false;
@@ -556,8 +601,16 @@ async function gateCreate(e) {
   const name = document.getElementById('setupName')?.value.trim();
   const pass = document.getElementById('setupPass')?.value || '';
   const status = document.getElementById('setupStatus');
-  if (!name || pass.length < 4) {
-    if (status) { status.textContent = 'A name and a passcode of at least 4 characters, please.'; status.style.color = 'var(--spent)'; }
+  const say = (m) => { if (status) { status.textContent = m; status.style.color = 'var(--spent)'; } };
+  if (!name || pass.length < 4) return (say('A name and a passcode of at least 4 characters, please.'), false);
+
+  if (!state.localAuth) {
+    const json = await staffApi('bootstrap', { name, pass }).catch(e => ({ success: false, error: e.message }));
+    if (!json.success) return (say(json.error || 'The house could not be opened.'), false);
+    const session = { name: json.name, role: json.role, token: json.token };
+    localStorage.setItem(LS_SESSION, JSON.stringify(session));
+    gateHide(session);
+    renderStaff();
     return false;
   }
   const staff = getStaff();
@@ -571,26 +624,36 @@ async function gateCreate(e) {
 
 async function gateEnter(e) {
   e.preventDefault();
-  const who = (document.getElementById('loginName')?.value || '').trim().toLowerCase();
+  const who = (document.getElementById('loginName')?.value || '').trim();
   const pass = document.getElementById('loginPass')?.value || '';
   const status = document.getElementById('loginStatus');
-  const hash = await sha256(pass);
+  const say = (m) => { if (status) { status.textContent = m; status.style.color = 'var(--spent)'; } };
 
-  const match = getStaff().find(p =>
-    (p.name.toLowerCase() === who || (p.email || '').toLowerCase() === who) && p.passHash === hash
-  );
-
-  if (!match) {
-    if (status) { status.textContent = 'The book does not recognise that name and passcode.'; status.style.color = 'var(--spent)'; }
+  if (!state.localAuth) {
+    const json = await staffApi('login', { who, pass }).catch(e => ({ success: false, error: e.message }));
+    if (!json.success) return (say(json.error || 'The book does not recognise that name and passcode.'), false);
+    const session = { name: json.name, role: json.role, token: json.token };
+    localStorage.setItem(LS_SESSION, JSON.stringify(session));
+    gateHide(session);
+    renderStaff();
     return false;
   }
+
+  const hash = await sha256(pass);
+  const w = who.toLowerCase();
+  const match = getStaff().find(p =>
+    (p.name.toLowerCase() === w || (p.email || '').toLowerCase() === w) && p.passHash === hash
+  );
+  if (!match) return (say('The book does not recognise that name and passcode.'), false);
   const session = { name: match.name, role: match.role };
   localStorage.setItem(LS_SESSION, JSON.stringify(session));
   gateHide(session);
   return false;
 }
 
-function gateSignOut() {
+async function gateSignOut() {
+  const token = getSession()?.token;
+  if (token && !state.localAuth) await staffApi('signout', { token }).catch(() => {});
   localStorage.removeItem(LS_SESSION);
   gateShow();
 }
@@ -625,12 +688,22 @@ document.addEventListener('DOMContentLoaded', () => {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   }));
 
-  renderStaff();
   reflectKeyStatus();
 
+  // A stored session with a server token is trusted on sight; otherwise
+  // (or for the browser-only fallback) the gate decides.
   const session = getSession();
-  if (session && getStaff().some(p => p.passHash)) gateHide(session);
-  else gateShow();
+  if (session?.token) {
+    state.localAuth = false;
+    gateHide(session);
+    renderStaff();
+  } else if (session && getStaff().some(p => p.passHash)) {
+    state.localAuth = true;
+    gateHide(session);
+    renderStaff();
+  } else {
+    gateShow();
+  }
 
   applyFigures(demoKpis(state.activeRange));
   fetchData(state.activeRange);
