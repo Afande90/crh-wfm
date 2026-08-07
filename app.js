@@ -31,10 +31,14 @@ async function fetchData(range) {
       console.info('[Ledger] wire down:', json.error || 'no answer');
       setWire('down', json.error);
       renderQuiet();
+      renderDiagnostics(json.stage === 'auth'
+        ? [{ endpoint: 'Login with Amazon (auth)', ok: false, note: json.error || 'authentication failed' }]
+        : null);
       return;
     }
 
     renderReal(json);
+    renderDiagnostics(json.diagnostics);
     setWire('live');
     const syncEl = document.getElementById('colophonStatus');
     if (syncEl) syncEl.textContent = `Last read ${new Date().toLocaleTimeString()}`;
@@ -425,6 +429,21 @@ function drawDollarSplit(k) {
   ).join('');
   box.innerHTML = `<div class="split-bar">${bar}</div><div class="split-legend">${legend}</div>
 <p class="footnote">Of every dollar the store takes in, this is how it divides (cost lines estimated until the Finances API is connected). The green is yours.</p>`;
+}
+
+// ─── DIAGNOSTICS — which endpoints answered, and why not ─
+function renderDiagnostics(diag) {
+  const box = document.getElementById('diagList');
+  if (!box) return;
+  if (!diag || !diag.length) {
+    box.innerHTML = '<p class="empty-note">No diagnostics received.</p>';
+    return;
+  }
+  box.innerHTML = diag.map(d => `<div class="diag-row ${d.ok ? 'ok' : 'bad'}">
+  <span class="diag-mark">${d.ok ? '✓' : '✗'}</span>
+  <span class="diag-name">${esc(d.endpoint)}${d.status ? ` <span class="diag-code mono">${d.status}</span>` : ''}</span>
+  <span class="diag-note">${esc(d.note || '')}</span>
+</div>`).join('');
 }
 
 // ─── WIRE STATUS (the stamp — always honest) ─────────

@@ -59,12 +59,23 @@ async function spFetch(token, path, params = {}) {
   return json;
 }
 
-// Resolve a fetch but never throw — returns null on failure so one bad
-// endpoint doesn't take down the whole dashboard.
-async function spFetchSafe(token, path, params) {
+// Resolve a fetch but never throw — records the outcome in `diag` so the
+// dashboard can show exactly which endpoint answered and why one didn't.
+async function spFetchSafe(token, path, params, diag, label) {
   try {
-    return await spFetch(token, path, params);
+    const res = await spFetch(token, path, params);
+    diag.push({ endpoint: label, ok: true, note: 'answered' });
+    return res;
   } catch (err) {
+    // Pull the HTTP status and Amazon's own reason out of the thrown message.
+    const m = /\s(\d{3}):/.exec(err.message);
+    const status = m ? Number(m[1]) : null;
+    let reason = err.message;
+    if (status === 403) reason = 'Access denied — this data role is not approved for the app (Seller Central → Apps → roles).';
+    else if (status === 404) reason = 'Not found — endpoint or resource unavailable for this account/region.';
+    else if (status === 400) reason = 'Bad request — often a marketplace/region mismatch.';
+    else if (status === 429) reason = 'Rate limited — Amazon is throttling; will retry next refresh.';
+    diag.push({ endpoint: label, ok: false, status, note: reason });
     console.warn('[sp-api-data] endpoint failed:', path, '-', err.message);
     return null;
   }
@@ -112,17 +123,18 @@ exports.handler = async (event) => {
       ? 'TEST_CASE_200'
       : new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
+    const diag = [{ endpoint: 'Login with Amazon (auth)', ok: true, note: 'token obtained' }];
     const [ordersRes, inventoryRes] = await Promise.all([
       spFetchSafe(token, '/orders/v0/orders', {
         MarketplaceIds: MARKETPLACE,
         CreatedAfter: createdAfter,
-      }),
+      }, diag, 'Orders'),
       spFetchSafe(token, '/fba/inventory/v1/summaries', {
         details: 'true',
         granularityType: 'Marketplace',
         granularityId: MARKETPLACE,
         marketplaceIds: MARKETPLACE,
-      }),
+      }, diag, 'FBA Inventory'),
     ]);
 
     const orders = ordersRes?.payload?.Orders || [];
@@ -180,6 +192,7 @@ exports.handler = async (event) => {
         totalOrders: orders.length,
         daily,
         inventory,
+        diagnostics: diag,
         syncedAt: new Date().toISOString(),
       }),
     };
