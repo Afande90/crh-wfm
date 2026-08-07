@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════
-   FBA INTELLIGENCE TERMINAL — App Logic
+   FBA STORE COMMAND — App Logic
    SP-API live data via /.netlify/functions/sp-api-data
 ═══════════════════════════════════════════════════════ */
 
@@ -22,6 +22,8 @@ async function fetchData(range) {
   try {
     const res  = await fetch(`/.netlify/functions/sp-api-data?range=${range}`);
     const json = await res.json();
+
+    if (json.meta) renderMeta(json.meta);
 
     if (!json.success) {
       // Sandbox/credentials not returning data yet — keep the demo numbers
@@ -50,9 +52,16 @@ function fmt(n) {
   return new Intl.NumberFormat('en-US').format(Math.round(n || 0));
 }
 
+function renderMeta(meta) {
+  const mode = document.getElementById('modeBadge');
+  const market = document.getElementById('marketBadge');
+  if (mode) mode.textContent = meta.sandbox ? 'SANDBOX' : 'PRODUCTION';
+  if (market && meta.region) market.textContent = meta.region.toUpperCase();
+}
+
 function renderDashboard(d) {
-  const { kpis, inventory } = d;
-  // Only overwrite the dashboard if the sandbox actually returned sales data.
+  const { kpis, inventory, orders } = d;
+  // Only overwrite the dashboard if the API actually returned sales data.
   // An empty sandbox response (revenue 0) would otherwise blank out the demo.
   if (kpis && kpis.revenue > 0) {
     updateKPICards(kpis);
@@ -60,6 +69,7 @@ function renderDashboard(d) {
     updateWaterfall(kpis);
   }
   if (inventory?.length) updateInventory(inventory);
+  if (orders?.length) updateOrders(orders);
   updateAlertBadge();
 }
 
@@ -72,10 +82,10 @@ function updateKPICards(kpis) {
     fmt(kpis.units),
     `$${fmt(kpis.fbaFees)}`,
   ];
-  document.querySelectorAll('.kpi-card .kpi-value').forEach((el, i) => {
+  document.querySelectorAll('#view-overview .kpi-card .kpi-value').forEach((el, i) => {
     if (values[i] !== undefined) el.textContent = values[i];
   });
-  document.querySelectorAll('.kpi-card .kpi-period').forEach(el => {
+  document.querySelectorAll('#view-overview .kpi-card .kpi-period').forEach(el => {
     el.textContent = state.activeRange;
   });
 }
@@ -140,6 +150,29 @@ function updateInventory(summaries) {
   if (html) list.innerHTML = html;
 }
 
+function updateOrders(orders) {
+  const tbody = document.querySelector('#ordersTable tbody');
+  if (!tbody) return;
+
+  const html = orders.slice(0, 10).map(o => {
+    const total  = o.OrderTotal?.Amount ? `$${o.OrderTotal.Amount}` : '—';
+    const items  = (o.NumberOfItemsShipped || 0) + (o.NumberOfItemsUnshipped || 0);
+    const status = o.OrderStatus || 'PENDING';
+    const color  = status === 'Shipped' ? 'green' : 'amber';
+    const date   = o.PurchaseDate ? new Date(o.PurchaseDate).toLocaleDateString() : '—';
+
+    return `<tr>
+  <td class="mono">${o.AmazonOrderId || '—'}</td>
+  <td class="mono">${date}</td>
+  <td class="num mono">${items}</td>
+  <td class="num mono">${total}</td>
+  <td><span class="status-pill ${color} sm">${status.toUpperCase()}</span></td>
+</tr>`;
+  }).join('');
+
+  if (html) tbody.innerHTML = html;
+}
+
 // ─── STATUS HELPERS ──────────────────────────────────
 function setSyncStatus(status) {
   const live   = document.querySelector('.live-badge');
@@ -187,12 +220,18 @@ function setRange(btn, range) {
 // ─── ALERT BADGE ─────────────────────────────────────
 function updateAlertBadge() {
   const badge = document.getElementById('alertBadge');
-  if (badge) badge.textContent = '3 ALERTS';
+  if (badge) badge.textContent = '3 ACTIONS';
 }
 
 // ─── INIT ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   updateAlertBadge();
+
+  const briefDate = document.getElementById('briefDate');
+  if (briefDate) {
+    const now = new Date();
+    briefDate.textContent = `Week of ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  }
 
   const aiBtn = document.querySelector('.ai-refresh-btn');
   if (aiBtn) {
@@ -204,5 +243,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   fetchData(state.activeRange);
-  console.log('[FBA Intelligence Terminal] initialized — fetching SP-API sandbox data');
+  console.log('[FBA Store Command] initialized');
 });

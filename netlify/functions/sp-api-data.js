@@ -1,13 +1,20 @@
-// FBA Intelligence Terminal — SP-API Data Aggregator
+// FBA Store Command — SP-API Data Aggregator
 // Runs server-side so credentials never touch the browser
 
 'use strict';
 
 const LWA_TOKEN_URL = 'https://api.amazon.com/auth/o2/token';
-const MARKETPLACE_US = 'ATVPDKIKX0DER';
+
+// Region + marketplace come from Netlify env vars so the same code serves
+// NA/EU/FE accounts and can flip sandbox → production without a code change.
+const REGION = (process.env.SP_API_REGION || 'na').trim().toLowerCase();
+const SANDBOX = (process.env.SP_API_SANDBOX || 'true').trim().toLowerCase() !== 'false';
+const MARKETPLACE = (process.env.SP_API_MARKETPLACE_ID || 'ATVPDKIKX0DER').trim();
 
 function spBase() {
-  return 'https://sandbox.sellingpartnerapi-na.amazon.com';
+  const host = { na: 'sellingpartnerapi-na', eu: 'sellingpartnerapi-eu', fe: 'sellingpartnerapi-fe' }[REGION]
+    || 'sellingpartnerapi-na';
+  return `https://${SANDBOX ? 'sandbox.' : ''}${host}.amazon.com`;
 }
 
 async function getLWAToken() {
@@ -16,9 +23,7 @@ async function getLWAToken() {
   const refreshToken = (process.env.SP_API_REFRESH_TOKEN || '').trim();
 
   console.log('[LWA] client_id present:', !!clientId, 'length:', clientId.length);
-  console.log('[LWA] client_secret present:', !!clientSecret, 'length:', clientSecret.length);
-  console.log('[LWA] refresh_token present:', !!refreshToken, 'length:', refreshToken.length);
-  console.log('[LWA] client_id starts with:', clientId.substring(0, 30));
+  console.log('[LWA] region:', REGION, 'sandbox:', SANDBOX, 'marketplace:', MARKETPLACE);
 
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
@@ -71,6 +76,8 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Origin': '*',
   };
 
+  const meta = { region: REGION, sandbox: SANDBOX, marketplace: MARKETPLACE };
+
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: cors, body: '' };
   }
@@ -92,27 +99,34 @@ exports.handler = async (event) => {
           success: false,
           stage: 'auth',
           error: authErr.message,
+          meta,
           kpis: null,
         }),
       };
     }
 
+    // Sandbox only answers the magic TEST_CASE_200 value; production needs a
+    // real ISO timestamp for the selected range.
+    const days = range === '30D' ? 30 : range === 'MTD' ? new Date().getDate() : 7;
+    const createdAfter = SANDBOX
+      ? 'TEST_CASE_200'
+      : new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+
     const [ordersRes, inventoryRes] = await Promise.all([
       spFetchSafe(token, '/orders/v0/orders', {
-        MarketplaceIds: MARKETPLACE_US,
-        CreatedAfter: 'TEST_CASE_200',
+        MarketplaceIds: MARKETPLACE,
+        CreatedAfter: createdAfter,
       }),
       spFetchSafe(token, '/fba/inventory/v1/summaries', {
         details: 'true',
         granularityType: 'Marketplace',
-        granularityId: MARKETPLACE_US,
-        marketplaceIds: MARKETPLACE_US,
+        granularityId: MARKETPLACE,
+        marketplaceIds: MARKETPLACE,
       }),
     ]);
 
     const orders = ordersRes?.payload?.Orders || [];
     const inventory = inventoryRes?.payload?.inventorySummaries || [];
-    const financeGroups = [];
 
     // Aggregate revenue and units from orders
     const revenue = orders.reduce((s, o) => s + parseFloat(o.OrderTotal?.Amount || 0), 0);
@@ -121,13 +135,8 @@ exports.handler = async (event) => {
       0
     );
 
-    // Sum fees from finance event groups
-    const fbaFees = financeGroups.reduce((s, g) => {
-      const amt = parseFloat(g.ConvertedTotal?.Amount || 0);
-      return s + (amt < 0 ? Math.abs(amt) : 0);
-    }, 0);
-
-    // WAC COGS estimate (40% of revenue) — replace with real COGS report when available
+    // Fee/COGS estimates until the Finances API is wired in production
+    const fbaFees = revenue * 0.11;
     const cogs = revenue * 0.4;
     const adSpend = revenue * 0.12;
     const netProfit = revenue - cogs - fbaFees - adSpend;
@@ -145,6 +154,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         range,
+        meta,
         sources,
         kpis: {
           revenue: Math.round(revenue),
@@ -157,7 +167,6 @@ exports.handler = async (event) => {
         },
         orders: orders.slice(0, 10),
         inventory,
-        financeGroups: financeGroups.slice(0, 5),
         syncedAt: new Date().toISOString(),
       }),
     };
@@ -166,7 +175,7 @@ exports.handler = async (event) => {
     return {
       statusCode: 500,
       headers: cors,
-      body: JSON.stringify({ success: false, error: err.message }),
+      body: JSON.stringify({ success: false, error: err.message, meta }),
     };
   }
 };
