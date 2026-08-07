@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════
    THE STOREFRONT LEDGER — Midnight Edition · App Logic
-   SP-API data via /.netlify/functions/sp-api-data
-   AI editor via /.netlify/functions/ai-editor
+   REAL FIGURES ONLY. Every number on the page comes from
+   the live wire; when the wire is quiet, the page says so.
 ═══════════════════════════════════════════════════════ */
 
 'use strict';
@@ -9,33 +9,11 @@
 const state = { activeRange: '7D', loading: false, lastKpis: null, meta: null, localAuth: false };
 
 const RANGE_WORDS = { '7D': 'THIS WEEK', '30D': 'THIS MONTH', 'MTD': 'MONTH TO DATE' };
+const REFRESH_MS = 60000; // re-read the wire every minute
 
 const LS_KEYS = 'ledger_ai_keys';
 const LS_STAFF = 'ledger_staff';
 const LS_SESSION = 'ledger_session';
-
-// Demonstration baseline (one week). Other ranges scale from it so the
-// edition toggle always shows a genuinely different paper.
-const DEMO_BASE = { revenue: 6210, cogs: 2484, fbaFees: 1117, adSpend: 762, netProfit: 1847, margin: 29.7, units: 831 };
-
-function rangeFactor(range) {
-  if (range === '30D') return 4.28;
-  if (range === 'MTD') return Math.max(new Date().getDate() / 7, 0.35);
-  return 1;
-}
-
-function demoKpis(range) {
-  const f = rangeFactor(range);
-  return {
-    revenue: Math.round(DEMO_BASE.revenue * f),
-    cogs: Math.round(DEMO_BASE.cogs * f),
-    fbaFees: Math.round(DEMO_BASE.fbaFees * f),
-    adSpend: Math.round(DEMO_BASE.adSpend * f),
-    netProfit: Math.round(DEMO_BASE.netProfit * f),
-    units: Math.round(DEMO_BASE.units * f),
-    margin: DEMO_BASE.margin,
-  };
-}
 
 // ─── FETCH ───────────────────────────────────────────
 async function fetchData(range) {
@@ -48,32 +26,22 @@ async function fetchData(range) {
     const json = await res.json();
 
     if (json.meta) renderMeta(json.meta);
-    const sandbox = json.meta ? !!json.meta.sandbox : true;
 
     if (!json.success) {
-      console.info('[Ledger] live data unavailable:', json.error || 'no data');
-      applyFigures(demoKpis(range));
-      setWire('demo');
-      fetchEditorial();
+      console.info('[Ledger] wire down:', json.error || 'no answer');
+      setWire('down', json.error);
+      renderQuiet();
       return;
     }
 
-    // Sandbox test orders carry no real sales history — print scaled
-    // demonstration figures but keep whatever the wire genuinely sent
-    // (orders, inventory). Production figures print as-is, zeros included:
-    // a quiet week is still the truth.
-    if (!sandbox && json.kpis) applyFigures(json.kpis);
-    else applyFigures(demoKpis(range));
-
-    if (json.inventory?.length) updateShelf(json.inventory);
-    if (json.orders?.length) updateWireTable(json.orders);
-
+    renderReal(json);
     setWire('live');
-    fetchEditorial();
+    const syncEl = document.getElementById('colophonStatus');
+    if (syncEl) syncEl.textContent = `Last read ${new Date().toLocaleTimeString()}`;
   } catch (err) {
-    console.info('[Ledger] printing from demonstration figures:', err.message);
-    applyFigures(demoKpis(range));
-    setWire('demo');
+    console.info('[Ledger] wire unreachable:', err.message);
+    setWire('down', err.message);
+    renderQuiet();
   } finally {
     state.loading = false;
   }
@@ -94,53 +62,83 @@ function esc(s) {
   }[c]));
 }
 
-async function sha256(text) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// ─── FIGURES (one path for demo, sandbox, production) ─
-function applyFigures(k) {
-  state.lastKpis = k;
-  const profit = k.netProfit;
-  const period = RANGE_WORDS[state.activeRange] || state.activeRange;
-
-  const lead = document.getElementById('leadProfit');
-  if (lead) {
-    lead.textContent = (profit < 0 ? '−' : '') + money(profit);
-    lead.classList.toggle('loss', profit < 0);
-  }
-  setText('leadPeriod', period);
-  setText('leadHeadline',
-    profit >= 0
-      ? `Your store kept ${money(profit)} after every cost — a ${k.margin}% margin on ${fmt(k.units)} units sold.`
-      : `The store ran at a loss of ${money(profit)} this period — costs outran ${money(k.revenue)} in takings.`);
-  setText('leadDeck',
-    `Gross takings of ${money(k.revenue)}, less goods (${money(k.cogs)}), fulfilment & fees (${money(k.fbaFees)}), and advertising (${money(k.adSpend)}).`);
-
-  setText('statRevenue', money(k.revenue));
-  setText('statUnits', fmt(k.units));
-  setText('statMargin', `${k.margin}%`);
-  const payout = Math.round(k.revenue * 0.47);
-  setText('statPayout', money(payout));
-  setText('boardPayout', money(payout));
-
-  const bp = document.getElementById('boardProfit');
-  if (bp) {
-    bp.textContent = (profit < 0 ? '−' : '') + money(profit);
-    bp.classList.toggle('spent', profit < 0);
-  }
-  setText('boardProfitNote', `kept ${period.toLowerCase()} · margin ${k.margin}%`);
-  setVerdict(profit >= 0 ? 'good' : 'trouble');
-
-  updateLedger(k);
-  renderCharts(k);
-}
-
+// ─── RENDER: REAL FIGURES ────────────────────────────
 function renderMeta(meta) {
   state.meta = meta;
   setText('mastMode', meta.sandbox ? 'SANDBOX' : 'PRODUCTION');
   setText('colophonMeta', `Region ${String(meta.region || '—').toUpperCase()} · Marketplace ${meta.marketplace || '—'}`);
+}
+
+function renderReal(d) {
+  const k = d.kpis || { revenue: 0, cogs: 0, fbaFees: 0, adSpend: 0, netProfit: 0, margin: 0, units: 0 };
+  state.lastKpis = k;
+  const period = RANGE_WORDS[state.activeRange] || state.activeRange;
+  const orderCount = d.totalOrders ?? (d.orders?.length || 0);
+  const quiet = k.revenue === 0 && orderCount === 0;
+
+  // Lead story
+  const lead = document.getElementById('leadProfit');
+  if (lead) {
+    lead.textContent = (k.netProfit < 0 ? '−' : '') + money(k.netProfit);
+    lead.classList.toggle('loss', k.netProfit < 0);
+  }
+  setText('leadPeriod', period);
+  if (quiet) {
+    setText('leadHeadline', 'The wire is connected — and brought no sales for this period.');
+    setText('leadDeck', 'That is Amazon’s real answer, not an error. Either there were no orders in this window, or the app’s data access is still awaiting approval in Seller Central.');
+  } else {
+    setText('leadHeadline',
+      k.netProfit >= 0
+        ? `Your store kept ${money(k.netProfit)} after every cost — ${fmt(k.units)} units across ${fmt(orderCount)} orders.`
+        : `The store ran at a loss of ${money(k.netProfit)} this period against ${money(k.revenue)} in takings.`);
+    setText('leadDeck',
+      `Gross takings of ${money(k.revenue)}, less estimated goods (${money(k.cogs)}), fees (${money(k.fbaFees)}), and advertising (${money(k.adSpend)}). Live from Amazon.`);
+  }
+
+  // Stats
+  setText('statRevenue', money(k.revenue));
+  setText('statUnits', fmt(k.units));
+  setText('statMargin', quiet ? '—' : `${k.margin}%`);
+  setText('statMarginNote', quiet ? '' : 'est.');
+  setText('statOrders', fmt(orderCount));
+
+  // Board
+  const bp = document.getElementById('boardProfit');
+  if (bp) {
+    bp.textContent = (k.netProfit < 0 ? '−' : '') + money(k.netProfit);
+    bp.classList.toggle('spent', k.netProfit < 0);
+  }
+  setText('boardProfitNote', quiet ? 'no sales on the wire this period' : `net (est.) ${period.toLowerCase()} · margin ${k.margin}%`);
+  setText('boardRevenue', money(k.revenue));
+  setText('boardUnits', fmt(k.units));
+  setText('boardOrders', fmt(orderCount));
+
+  // Ledger + dollar split
+  updateLedger(k);
+  drawDollarSplit(k);
+
+  // Shelf + order wire (only ever from real payloads)
+  updateShelf(d.inventory || []);
+  updateWireTable(d.orders || [], orderCount);
+
+  // Dispatches from the real state of things
+  renderDispatches(d, k, quiet);
+
+  // Charts from real per-day figures
+  renderCharts(d.daily || []);
+
+  // Verdict
+  if (quiet) setVerdict('quiet');
+  else setVerdict(k.netProfit >= 0 ? 'good' : 'trouble');
+}
+
+// When the wire itself is down (auth/network), print dashes — never inventions.
+function renderQuiet() {
+  ['leadProfit', 'statRevenue', 'statUnits', 'statMargin', 'statOrders',
+   'boardProfit', 'boardRevenue', 'boardUnits', 'boardOrders'].forEach(id => setText(id, '—'));
+  setText('leadHeadline', 'The wire could not be read.');
+  setText('leadDeck', 'The connection to Amazon failed — the stamp above says so. No figures are shown because none were received.');
+  setVerdict('down');
 }
 
 function setVerdict(kind) {
@@ -151,14 +149,18 @@ function setVerdict(kind) {
   if (kind === 'trouble') {
     stamp.textContent = 'ATTENTION REQUIRED';
     stamp.classList.add('trouble');
-    if (line) line.textContent = 'The house ran at a loss this period — open the Books and the Dispatches before anything else.';
-  } else if (kind === 'caution') {
-    stamp.textContent = 'WATCHFUL';
+    if (line) line.textContent = 'The house ran at a loss this period — open the Books and the Dispatches.';
+  } else if (kind === 'quiet') {
+    stamp.textContent = 'WIRE QUIET';
     stamp.classList.add('caution');
-    if (line) line.textContent = 'Profitable, but matters on the Dispatches page want signatures.';
+    if (line) line.textContent = 'Connected to Amazon, but no sales came over the wire for this period.';
+  } else if (kind === 'down') {
+    stamp.textContent = 'WIRE DOWN';
+    stamp.classList.add('trouble');
+    if (line) line.textContent = 'The connection to Amazon could not be read — see the stamp in the masthead.';
   } else {
     stamp.textContent = 'IN GOOD ORDER';
-    if (line) line.textContent = 'The house is profitable, the wire is up, and three matters await your signature.';
+    if (line) line.textContent = 'The house is profitable and the wire is up.';
   }
 }
 
@@ -183,18 +185,23 @@ function updateLedger(k) {
       bar.style.width = `${Math.min(100, Math.round((widths[key] / max) * 100))}%`;
     }
   });
-  const m = document.getElementById('ledgerMargin');
-  if (m) m.textContent = `${k.margin}%`;
 }
 
 function updateShelf(summaries) {
   const list = document.getElementById('shelfList');
   if (!list) return;
 
+  if (!summaries.length) {
+    list.innerHTML = '<p class="empty-note">No inventory reported on the wire.</p>';
+    setText('boardShelf', '0');
+    setText('boardShelfNote', 'no stock lines reported');
+    return;
+  }
+
   let low = 0, lowest = null;
-  const html = summaries.slice(0, 6).map(item => {
+  const html = summaries.slice(0, 8).map(item => {
     const qty  = item.totalQuantity || 0;
-    const days = Math.round(qty / 5); // placeholder daily velocity
+    const days = Math.round(qty / 5); // rough velocity placeholder until sales history accrues
     const pct  = Math.min(100, Math.round((days / 120) * 100));
     const cls  = days > 80 ? 'ok' : days > 40 ? 'low' : 'crit';
     if (cls !== 'ok') { low++; if (!lowest || days < lowest.days) lowest = { name: item.productName || item.asin, days }; }
@@ -203,22 +210,25 @@ function updateShelf(summaries) {
     return `<div class="shelf-row${cls !== 'ok' ? ' low' : ''}">
   <div class="shelf-name">${name} <span class="shelf-sku mono">${esc(item.asin || '')}</span></div>
   <div class="shelf-track"><span class="shelf-fill ${cls}" style="width:${pct}%"></span></div>
-  <div class="shelf-days mono">${days}<span class="d">d</span></div>
+  <div class="shelf-days mono">${qty}<span class="d">u</span></div>
 </div>`;
   }).join('');
 
-  if (html) {
-    list.innerHTML = html;
-    setText('boardShelf', low ? `${low} low` : 'all well');
-    setText('boardShelfNote', lowest ? `${lowest.name} — ${lowest.days} days remain` : 'every line above threshold');
-  }
+  list.innerHTML = html;
+  setText('boardShelf', String(summaries.length));
+  setText('boardShelfNote', low ? `${low} line${low > 1 ? 's' : ''} running low` : 'stock lines reported');
 }
 
-function updateWireTable(orders) {
+function updateWireTable(orders, totalCount) {
   const tbody = document.getElementById('ordersBody');
   if (!tbody) return;
 
-  const html = orders.slice(0, 8).map(o => {
+  if (!orders.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-cell">No orders on the wire for this period.</td></tr>';
+    return;
+  }
+
+  const html = orders.slice(0, 10).map(o => {
     const total  = o.OrderTotal?.Amount ? `$${esc(o.OrderTotal.Amount)}` : '—';
     const items  = (o.NumberOfItemsShipped || 0) + (o.NumberOfItemsUnshipped || 0);
     const status = o.OrderStatus || 'Pending';
@@ -236,26 +246,94 @@ function updateWireTable(orders) {
 </tr>`;
   }).join('');
 
-  if (html) tbody.innerHTML = html;
+  tbody.innerHTML = html + (totalCount > 10
+    ? `<tr><td colspan="5" class="empty-cell">…and ${totalCount - 10} more in this period.</td></tr>` : '');
 }
 
-// ─── CHARTS — hand-set SVG, no libraries ─────────────
-const TREND_SHAPE = [0.55, 0.72, 0.66, 0.78, 0.62, 0.35, 0.48, 0.85, 0.92, 0.74, 0.88, 1.0, 0.58, 0.95];
-const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+// ─── DISPATCHES — raised only by the real figures ────
+function renderDispatches(d, k, quiet) {
+  const row = document.getElementById('dispatchRow');
+  if (!row) return;
+  const items = [];
 
-function trendSeries(weekProfit) {
-  const lastWeek = TREND_SHAPE.slice(7).reduce((a, b) => a + b, 0);
-  const scale = (weekProfit || DEMO_BASE.netProfit) / lastWeek;
-  return TREND_SHAPE.map(v => Math.round(v * scale));
+  if (quiet) {
+    items.push({
+      stamp: 'ATTEND', urgent: true,
+      title: 'The wire brought no sales.',
+      body: state.meta?.sandbox
+        ? 'The house is still wired to Amazon’s sandbox — test service, no real history.'
+        : 'Connected in production, yet no orders returned. Most often this means the app’s Orders data role is still awaiting approval in Seller Central.',
+      action: state.meta?.sandbox
+        ? '→ Flip to production once Amazon approves the app'
+        : '→ Seller Central → Apps & Services → check the app’s data access',
+    });
+  }
+
+  const unshipped = (d.orders || []).filter(o => o.OrderStatus && o.OrderStatus !== 'Shipped' && o.OrderStatus !== 'Canceled').length;
+  if (unshipped) {
+    items.push({
+      stamp: 'THIS WEEK', urgent: false,
+      title: `${unshipped} order${unshipped > 1 ? 's' : ''} not yet shipped.`,
+      body: 'Open orders are waiting on fulfilment. Late dispatch is the fastest way to hurt account health.',
+      action: '→ Review open orders in Seller Central',
+    });
+  }
+
+  (d.inventory || []).forEach(item => {
+    const qty = item.totalQuantity || 0;
+    if (qty > 0 && qty < 20 && items.length < 5) {
+      items.push({
+        stamp: 'THIS WEEK', urgent: false,
+        title: `${item.productName || item.asin || 'A product'} runs low.`,
+        body: `Only ${qty} units reported in stock. Restocking takes weeks — the window to reorder is open now.`,
+        action: '→ Plan a reorder before the shelf empties',
+      });
+    }
+  });
+
+  if (k.netProfit < 0 && !quiet) {
+    items.push({
+      stamp: 'ATTEND', urgent: true,
+      title: 'The period ran at a loss.',
+      body: `Costs outran ${money(k.revenue)} in takings by ${money(k.netProfit)}.`,
+      action: '→ Open the Books and find the heaviest line',
+    });
+  }
+
+  const badge = document.getElementById('dispatchCount');
+  if (badge) { badge.textContent = String(items.length); badge.hidden = items.length === 0; }
+  setText('boardActions', String(items.length));
+  setText('boardActionsNote', items.length ? (items.some(i => i.urgent) ? 'one urgent' : 'none urgent') : 'nothing requires your signature');
+
+  row.innerHTML = items.length
+    ? items.map(i => `<article class="dispatch${i.urgent ? ' urgent' : ''}">
+  <div class="dispatch-stamp${i.urgent ? '' : ' week'}">${i.stamp}</div>
+  <h4 class="dispatch-title">${esc(i.title)}</h4>
+  <p class="dispatch-body">${esc(i.body)}</p>
+  <div class="dispatch-do">${esc(i.action)}</div>
+</article>`).join('')
+    : '<p class="empty-note">Nothing requires your signature. The wire is calm.</p>';
 }
 
-function renderCharts(kpis) {
-  const k = kpis || demoKpis(state.activeRange);
-  const series = trendSeries(k.netProfit);
-  drawTrend('chartTrend', series);
-  drawDaily('chartDaily', series.slice(7));
-  drawSpark('boardSpark', series);
-  drawDollarSplit(k);
+// ─── CHARTS — drawn only from real per-day figures ───
+function renderCharts(daily) {
+  const trendBox = document.getElementById('chartTrend');
+  const dailyBox = document.getElementById('chartDaily');
+  const spark = document.getElementById('boardSpark');
+  const emptyMsg = '<p class="chart-empty">No figures on the wire yet.</p>';
+
+  if (!daily.length) {
+    if (trendBox) trendBox.innerHTML = emptyMsg;
+    if (dailyBox) dailyBox.innerHTML = emptyMsg;
+    if (spark) spark.innerHTML = '';
+    return;
+  }
+
+  const values = daily.map(d => d.revenue);
+  const labels = daily.map(d => d.date.slice(5)); // MM-DD
+  drawTrend('chartTrend', values, labels);
+  drawDaily('chartDaily', values.slice(-7), labels.slice(-7));
+  drawSpark('boardSpark', values);
 }
 
 function svgEl(container, html) {
@@ -263,14 +341,15 @@ function svgEl(container, html) {
   if (box) box.innerHTML = html;
 }
 
-function drawTrend(id, data) {
-  const W = 560, H = 150, PAD = 40, BOT = 22;
-  const max = Math.max(...data) * 1.15;
-  const x = i => PAD + (i * (W - PAD - 10)) / (data.length - 1);
+function drawTrend(id, data, labels) {
+  const W = 560, H = 150, PAD = 44, BOT = 22;
+  const max = Math.max(...data, 1) * 1.15;
+  const n = Math.max(data.length - 1, 1);
+  const x = i => PAD + (i * (W - PAD - 10)) / n;
   const y = v => (H - BOT) - (v / max) * (H - BOT - 12);
   const pts = data.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   const area = `M${x(0)},${y(data[0])} ${data.map((v, i) => `L${x(i)},${y(v)}`).join(' ')} L${x(data.length - 1)},${H - BOT} L${x(0)},${H - BOT} Z`;
-  const gridLines = [0.25, 0.5, 0.75, 1].map(f => {
+  const grid = [0.5, 1].map(f => {
     const val = max * f / 1.15;
     const gy = y(val);
     return `<line x1="${PAD}" y1="${gy}" x2="${W - 10}" y2="${gy}" class="c-grid"/>
@@ -283,28 +362,27 @@ function drawTrend(id, data) {
   <stop offset="0%" stop-color="#58b98a" stop-opacity="0.28"/>
   <stop offset="100%" stop-color="#58b98a" stop-opacity="0"/>
 </linearGradient></defs>
-${gridLines}
+${grid}
 <path d="${area}" fill="url(#tfill)"/>
 <polyline points="${pts}" class="c-line"/>
 <circle cx="${x(last)}" cy="${y(data[last])}" r="3.5" class="c-dot"/>
-<text x="${x(0)}" y="${H - 6}" class="c-label">D−14</text>
-<text x="${x(7)}" y="${H - 6}" class="c-label" text-anchor="middle">D−7</text>
-<text x="${x(last)}" y="${H - 6}" class="c-label" text-anchor="end">TODAY</text>
+<text x="${x(0)}" y="${H - 6}" class="c-label">${labels[0] || ''}</text>
+<text x="${x(last)}" y="${H - 6}" class="c-label" text-anchor="end">${labels[last] || ''}</text>
 </svg>`);
 }
 
-function drawDaily(id, week) {
+function drawDaily(id, values, labels) {
   const W = 560, H = 150, PAD = 20, BOT = 24;
-  const max = Math.max(...week) * 1.2;
-  const bw = (W - PAD - 14) / week.length;
-  const best = Math.max(...week);
-  const bars = week.map((v, i) => {
+  const max = Math.max(...values, 1) * 1.2;
+  const bw = (W - PAD - 14) / values.length;
+  const best = Math.max(...values);
+  const bars = values.map((v, i) => {
     const bh = (v / max) * (H - BOT - 16);
     const bx = PAD + i * bw + bw * 0.14;
     const by = (H - BOT) - bh;
-    return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${(bw * 0.72).toFixed(1)}" height="${bh.toFixed(1)}" rx="2" class="c-bar${v === best ? ' best' : ''}"/>
+    return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${(bw * 0.72).toFixed(1)}" height="${Math.max(bh, 1).toFixed(1)}" rx="2" class="c-bar${v === best && v > 0 ? ' best' : ''}"/>
 <text x="${(bx + bw * 0.36).toFixed(1)}" y="${by - 5}" class="c-label" text-anchor="middle">$${fmt(v)}</text>
-<text x="${(bx + bw * 0.36).toFixed(1)}" y="${H - 8}" class="c-label" text-anchor="middle">${DAY_NAMES[i]}</text>`;
+<text x="${(bx + bw * 0.36).toFixed(1)}" y="${H - 8}" class="c-label" text-anchor="middle">${labels[i] || ''}</text>`;
   }).join('');
   svgEl(id, `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
 <line x1="${PAD}" y1="${H - 24}" x2="${W - 10}" y2="${H - 24}" class="c-axis"/>
@@ -313,6 +391,7 @@ ${bars}
 }
 
 function drawSpark(id, data) {
+  if (data.length < 2) { svgEl(id, ''); return; }
   const W = 220, H = 44;
   const max = Math.max(...data), min = Math.min(...data);
   const x = i => (i * W) / (data.length - 1);
@@ -326,7 +405,11 @@ function drawSpark(id, data) {
 
 function drawDollarSplit(k) {
   const box = document.getElementById('dollarSplit');
-  if (!box || !k.revenue) return;
+  if (!box) return;
+  if (!k.revenue) {
+    box.innerHTML = '<p class="empty-note">Awaiting live sales.</p>';
+    return;
+  }
   const parts = [
     { key: 'Goods', val: k.cogs, cls: 'sp-goods' },
     { key: 'Fees',  val: k.fbaFees, cls: 'sp-fees' },
@@ -341,40 +424,34 @@ function drawDollarSplit(k) {
     `<span class="split-key"><span class="split-swatch ${p.cls}"></span>${p.key} <b class="mono">${Math.round((p.val / total) * 100)}¢</b></span>`
   ).join('');
   box.innerHTML = `<div class="split-bar">${bar}</div><div class="split-legend">${legend}</div>
-<p class="footnote">Of every dollar the store takes in, this is how it divides. The green is yours.</p>`;
+<p class="footnote">Of every dollar the store takes in, this is how it divides (cost lines estimated until the Finances API is connected). The green is yours.</p>`;
 }
 
 // ─── WIRE STATUS (the stamp — always honest) ─────────
-function setWire(status) {
+function setWire(status, detail) {
   const stamp = document.getElementById('wireStamp');
   const colophon = document.getElementById('colophonStatus');
   if (!stamp) return;
-  const sandbox = state.meta ? !!state.meta.sandbox : true;
+  const sandbox = state.meta ? !!state.meta.sandbox : false;
 
   stamp.classList.remove('demo', 'error');
   if (status === 'live' && !sandbox) {
     stamp.textContent = 'WIRE · LIVE FROM AMAZON';
     setText('boardWire', 'LIVE');
     setText('boardWireNote', 'real figures, straight from Amazon');
-    if (colophon) colophon.textContent = 'Printed from live figures';
   } else if (status === 'live') {
     stamp.textContent = 'WIRE · SANDBOX TEST';
     stamp.classList.add('demo');
     setText('boardWire', 'SANDBOX');
     setText('boardWireNote', 'connected — Amazon test service');
-    if (colophon) colophon.textContent = 'Wire connected to sandbox · figures are demonstrations';
   } else if (status === 'syncing') {
     stamp.textContent = 'WIRE · RECEIVING…';
-  } else if (status === 'demo') {
-    stamp.textContent = 'PRESS PROOF · DEMO FIGURES';
-    stamp.classList.add('demo');
-    setText('boardWire', 'PROOF');
-    setText('boardWireNote', 'demonstration figures for now');
-    if (colophon) colophon.textContent = 'Printed from demonstration figures';
   } else {
     stamp.textContent = 'WIRE · DOWN';
     stamp.classList.add('error');
     setText('boardWire', 'DOWN');
+    setText('boardWireNote', detail ? String(detail).slice(0, 60) : 'connection failed');
+    if (colophon) colophon.textContent = 'The wire could not be read';
   }
 }
 
@@ -400,8 +477,8 @@ async function fetchEditorial() {
     });
     const json = await res.json();
     if (!json.success || !json.paragraphs?.length) {
-      console.info('[Ledger] editor unavailable, keeping the standing column:', json.error || 'no text');
-      setText('boardEditor', 'STANDING');
+      console.info('[Ledger] editor unavailable:', json.error || 'no text');
+      setText('boardEditor', 'SILENT');
       return;
     }
 
@@ -416,11 +493,11 @@ async function fetchEditorial() {
       }).join('');
     }
     const sig = document.querySelector('.editorial-sig');
-    if (sig) sig.textContent = `— The Ledger · written by ${json.model || 'AI'} from this period's figures`;
+    if (sig) sig.textContent = `— The Ledger · written by ${json.model || 'AI'} from this period's live figures`;
     setText('boardEditor', 'FRESH');
   } catch (err) {
     console.info('[Ledger] editor unavailable:', err.message);
-    setText('boardEditor', 'STANDING');
+    setText('boardEditor', 'SILENT');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '↻ Ask the editor to write again'; }
   }
@@ -457,14 +534,10 @@ function reflectKeyStatus() {
     : 'Using the paper’s house keys.');
 }
 
-// ─── ADMINISTRATION: STAFF REGISTRY ──────────────────
-// Server-backed (Supabase via /staff function); falls back to the
-// in-browser book only if the backend is unreachable.
+// ─── STAFF & SESSIONS (Supabase via /staff) ──────────
 const API_STAFF = '/.netlify/functions/staff';
 
 async function staffApi(action, payload = {}) {
-  // Never hang the UI: a cold function + a waking database can be slow, so
-  // give every call a hard 12s ceiling and surface a clean error instead.
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 12000);
   try {
@@ -482,7 +555,7 @@ async function staffApi(action, payload = {}) {
   }
 }
 
-function getStaff() {
+function getStaffLocal() {
   try {
     const s = JSON.parse(localStorage.getItem(LS_STAFF) || 'null');
     if (Array.isArray(s)) return s;
@@ -490,43 +563,34 @@ function getStaff() {
   return [];
 }
 
-function saveStaff(staff) {
-  localStorage.setItem(LS_STAFF, JSON.stringify(staff));
-  renderStaff();
-}
-
 function roleClass(role) {
   return { 'Proprietor': 'proprietor', 'Keeper of Books': 'keeper', 'Clerk': 'clerk', 'Reader': 'reader' }[role] || 'reader';
 }
 
-function staffRows(staff, removable) {
-  return staff.length
-    ? staff.map((p, i) => `<div class="registry-row">
+function paintStaff(staff, serverBacked) {
+  const list = document.getElementById('registryList');
+  if (!list) return;
+  list.innerHTML = staff.length
+    ? staff.map((p) => `<div class="registry-row">
   <div class="rr-who">
     <div class="rr-name">${esc(p.name)}</div>
     <div class="rr-email">${esc(p.email || '')}</div>
   </div>
   <span class="rr-role ${roleClass(p.role)}">${esc(p.role)}</span>
-  ${removable ? `<button class="rr-remove" onclick="removeStaff('${esc(p.id ?? i)}')" title="Strike from the book">strike</button>` : ''}
+  <button class="rr-remove" onclick="removeStaff('${esc(p.id ?? '')}')" title="Strike from the book">strike</button>
 </div>`).join('')
     : '<div class="registry-empty">The book is empty — enter the first name.</div>';
+  setText('boardStaff', String(staff.length));
+  const status = document.getElementById('staffStatus');
+  if (status && !serverBacked) status.textContent = 'Backend unreachable — registry running in this browser only.';
 }
 
 async function renderStaff() {
-  const list = document.getElementById('registryList');
-  if (!list) return;
-
   if (!state.localAuth) {
-    const json = await staffApi('list').catch(() => null);
-    if (json?.success) {
-      list.innerHTML = staffRows(json.staff, true);
-      setText('boardStaff', String(json.staff.length));
-      return;
-    }
+    const json = await staffApi('list');
+    if (json?.success) { paintStaff(json.staff, true); return; }
   }
-  const staff = getStaff();
-  list.innerHTML = staffRows(staff, true);
-  setText('boardStaff', String(staff.length));
+  paintStaff(getStaffLocal(), false);
 }
 
 async function addStaff() {
@@ -535,45 +599,29 @@ async function addStaff() {
   const role = document.getElementById('staffRole')?.value || 'Reader';
   const pass = document.getElementById('staffPass')?.value || '';
   const status = document.getElementById('staffStatus');
-  const say = (msg, color) => { if (status) { status.textContent = msg; status.style.color = color; } };
+  const say = (m, ok) => { if (status) { status.textContent = m; status.style.color = ok ? 'var(--kept)' : 'var(--spent)'; } };
 
-  if (!name) return say('A name is required to enter the book.', 'var(--spent)');
-  if (pass.length < 4) return say('A passcode of at least 4 characters is required — they sign in with it.', 'var(--spent)');
+  if (!name) return say('A name is required to enter the book.');
+  if (pass.length < 4) return say('A passcode of at least 4 characters is required.');
 
-  if (!state.localAuth) {
-    const json = await staffApi('add', { name, email, role, pass }).catch(e => ({ success: false, error: e.message }));
-    if (!json.success) return say(json.error || 'The book refused the entry.', 'var(--spent)');
-  } else {
-    const staff = getStaff();
-    staff.push({ name, email, role, passHash: await sha256(pass) });
-    saveStaff(staff);
-  }
+  const json = await staffApi('add', { name, email, role, pass });
+  if (!json.success) return say(json.error || 'The book refused the entry.');
 
   ['staffName', 'staffEmail', 'staffPass'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  say(`${name} entered as ${role}. They can now sign in.`, 'var(--kept)');
+  say(`${name} entered as ${role}. They can now sign in.`, true);
   renderStaff();
 }
 
-async function removeStaff(idOrIndex) {
+async function removeStaff(id) {
   const status = document.getElementById('staffStatus');
-  if (!state.localAuth) {
-    const json = await staffApi('remove', { id: idOrIndex }).catch(e => ({ success: false, error: e.message }));
-    if (status) {
-      status.textContent = json.success ? 'Struck from the book.' : (json.error || 'The book refused.');
-      status.style.color = json.success ? 'var(--ink-faint)' : 'var(--spent)';
-    }
-  } else {
-    const staff = getStaff();
-    const [gone] = staff.splice(Number(idOrIndex), 1);
-    saveStaff(staff);
-    if (status && gone) { status.textContent = `${gone.name} struck from the book.`; status.style.color = 'var(--ink-faint)'; }
-  }
+  const json = await staffApi('remove', { id });
+  if (!json.success && status) { status.textContent = json.error || 'Could not strike the name.'; status.style.color = 'var(--spent)'; }
   renderStaff();
 }
 
-// ─── THE GATE — sign the book to enter ───────────────
+// ─── THE GATE ────────────────────────────────────────
 function getSession() {
   try { return JSON.parse(localStorage.getItem(LS_SESSION) || 'null'); }
   catch { return null; }
@@ -588,21 +636,19 @@ async function gateShow() {
   const gate = document.getElementById('gate');
   if (!gate) return;
 
-  // Reveal a form IMMEDIATELY so the door is never blank — optimistically
-  // the setup form, or the login form if this browser already knows a keeper.
-  const knownKeeper = getStaff().some(p => p.passHash);
+  const knownKeeper = getStaffLocal().some(p => p.passHash) || !!localStorage.getItem('ledger_has_keeper');
   showGateForm(knownKeeper);
   gate.hidden = false;
   gate.style.display = 'flex';
   document.body.classList.add('gated');
 
-  // Then confirm with the backend in the background and swap if needed.
   const status = await staffApi('status');
   if (status?.success) {
     state.localAuth = false;
+    localStorage.setItem('ledger_has_keeper', status.hasKeeper ? '1' : '');
     showGateForm(status.hasKeeper);
   } else {
-    state.localAuth = true; // browser-only fallback
+    state.localAuth = true;
     showGateForm(knownKeeper);
   }
 }
@@ -614,6 +660,11 @@ function gateHide(session) {
   if (session) setText('mastReader', `KEPT BY ${session.name.toUpperCase()}`);
 }
 
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 async function gateCreate(e) {
   e.preventDefault();
   const name = document.getElementById('setupName')?.value.trim();
@@ -623,20 +674,22 @@ async function gateCreate(e) {
   if (!name || pass.length < 4) return (say('A name and a passcode of at least 4 characters, please.'), false);
 
   if (!state.localAuth) {
-    const json = await staffApi('bootstrap', { name, pass }).catch(e => ({ success: false, error: e.message }));
+    const json = await staffApi('bootstrap', { name, pass });
     if (!json.success) return (say(json.error || 'The house could not be opened.'), false);
     const session = { name: json.name, role: json.role, token: json.token };
     localStorage.setItem(LS_SESSION, JSON.stringify(session));
+    localStorage.setItem('ledger_has_keeper', '1');
     gateHide(session);
     renderStaff();
     return false;
   }
-  const staff = getStaff();
+  const staff = getStaffLocal();
   staff.unshift({ name, email: '', role: 'Proprietor', passHash: await sha256(pass) });
-  saveStaff(staff);
+  localStorage.setItem(LS_STAFF, JSON.stringify(staff));
   const session = { name, role: 'Proprietor' };
   localStorage.setItem(LS_SESSION, JSON.stringify(session));
   gateHide(session);
+  renderStaff();
   return false;
 }
 
@@ -648,7 +701,7 @@ async function gateEnter(e) {
   const say = (m) => { if (status) { status.textContent = m; status.style.color = 'var(--spent)'; } };
 
   if (!state.localAuth) {
-    const json = await staffApi('login', { who, pass }).catch(e => ({ success: false, error: e.message }));
+    const json = await staffApi('login', { who, pass });
     if (!json.success) return (say(json.error || 'The book does not recognise that name and passcode.'), false);
     const session = { name: json.name, role: json.role, token: json.token };
     localStorage.setItem(LS_SESSION, JSON.stringify(session));
@@ -656,22 +709,21 @@ async function gateEnter(e) {
     renderStaff();
     return false;
   }
-
   const hash = await sha256(pass);
-  const w = who.toLowerCase();
-  const match = getStaff().find(p =>
-    (p.name.toLowerCase() === w || (p.email || '').toLowerCase() === w) && p.passHash === hash
+  const match = getStaffLocal().find(p =>
+    (p.name.toLowerCase() === who.toLowerCase() || (p.email || '').toLowerCase() === who.toLowerCase()) && p.passHash === hash
   );
   if (!match) return (say('The book does not recognise that name and passcode.'), false);
   const session = { name: match.name, role: match.role };
   localStorage.setItem(LS_SESSION, JSON.stringify(session));
   gateHide(session);
+  renderStaff();
   return false;
 }
 
 async function gateSignOut() {
   const token = getSession()?.token;
-  if (token && !state.localAuth) await staffApi('signout', { token }).catch(() => {});
+  if (token && !state.localAuth) await staffApi('signout', { token });
   localStorage.removeItem(LS_SESSION);
   gateShow();
 }
@@ -695,7 +747,7 @@ function setRange(btn, range) {
   document.querySelectorAll('.edition').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   state.activeRange = range;
-  applyFigures(demoKpis(range));
+  setText('leadPeriod', RANGE_WORDS[range] || range);
   fetchData(range);
 }
 
@@ -708,13 +760,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   reflectKeyStatus();
 
-  // A stored session with a server token is trusted on sight; otherwise
-  // (or for the browser-only fallback) the gate decides.
   const session = getSession();
   if (session?.token) {
-    // A server token must be re-checked against Supabase before we trust it —
-    // never enter on a browser flag alone.
-    gateShow(); // show the door immediately in case verification fails
+    gateShow();
     staffApi('verify', { token: session.token }).then(res => {
       if (res?.success) {
         state.localAuth = false;
@@ -724,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem(LS_SESSION);
       }
     });
-  } else if (session && getStaff().some(p => p.passHash)) {
+  } else if (session && getStaffLocal().some(p => p.passHash)) {
     state.localAuth = true;
     gateHide(session);
     renderStaff();
@@ -732,7 +780,8 @@ document.addEventListener('DOMContentLoaded', () => {
     gateShow();
   }
 
-  applyFigures(demoKpis(state.activeRange));
   fetchData(state.activeRange);
-  console.log('[The Storefront Ledger] midnight edition printed');
+  fetchEditorial();
+  setInterval(() => fetchData(state.activeRange), REFRESH_MS);
+  console.log('[The Storefront Ledger] midnight edition — real figures only');
 });
