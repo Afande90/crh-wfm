@@ -26,11 +26,13 @@ async function fetchData(range) {
       // clearly stamped as a proof copy.
       console.info('[Ledger] live data unavailable:', json.error || 'no data');
       setWire('demo');
+      fetchEditorial(null, range);
       return;
     }
 
     renderLive(json);
     setWire('live');
+    fetchEditorial(json.kpis, range);
   } catch (err) {
     console.info('[Ledger] printing from demonstration figures:', err.message);
     setWire('demo');
@@ -175,6 +177,36 @@ function setWire(status) {
   } else {
     stamp.textContent = 'WIRE · DOWN';
     stamp.classList.add('error');
+  }
+}
+
+// ─── FROM THE EDITOR (Gemini, free tier) ─────────────
+async function fetchEditorial(kpis, range) {
+  try {
+    const res = await fetch('/.netlify/functions/ai-editor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ range, period: RANGE_WORDS[range] || range, kpis }),
+    });
+    const json = await res.json();
+    if (!json.success || !json.paragraphs?.length) {
+      console.info('[Ledger] editor unavailable, keeping the standing column:', json.error || 'no text');
+      return;
+    }
+
+    const body = document.querySelector('.editorial-body');
+    if (!body) return;
+    body.innerHTML = json.paragraphs.map((p, i) => {
+      if (i === 0 && p.length > 1) {
+        return `<p><span class="dropcap">${p[0]}</span>${p.slice(1)}</p>`;
+      }
+      return `<p>${p}</p>`;
+    }).join('');
+
+    const sig = document.querySelector('.editorial-sig');
+    if (sig) sig.textContent = `— The Ledger · written by ${json.model || 'Gemini'} from this period's figures`;
+  } catch (err) {
+    console.info('[Ledger] editor unavailable:', err.message);
   }
 }
 
