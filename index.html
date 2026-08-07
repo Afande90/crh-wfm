@@ -58,6 +58,7 @@
         <div class="bt-label">The Till</div>
         <div class="bt-value mono kept" id="boardProfit">$1,847</div>
         <div class="bt-note" id="boardProfitNote">kept this week · margin 29.7%</div>
+        <div class="bt-spark" id="boardSpark"></div>
       </button>
       <button class="board-tile" onclick="showTabByName('dispatches')">
         <div class="bt-label">Awaiting Signature</div>
@@ -140,6 +141,20 @@
         </div>
       </div>
     </div>
+
+    <div class="section-rule"></div>
+
+    <h3 class="section-head">The Week, Drawn <span class="section-sub">— profit by day, pictured</span></h3>
+    <div class="chart-duo">
+      <div class="chart-block">
+        <div class="chart-title mono">PROFIT TREND · 14 DAYS</div>
+        <div class="chart-box" id="chartTrend"></div>
+      </div>
+      <div class="chart-block">
+        <div class="chart-title mono">DAILY TAKINGS · THIS WEEK</div>
+        <div class="chart-box" id="chartDaily"></div>
+      </div>
+    </div>
   </section>
 
   <!-- ══════════ TAB: DISPATCHES ══════════ -->
@@ -169,6 +184,11 @@
 
   <!-- ══════════ TAB: THE BOOKS ══════════ -->
   <section class="panel" id="tab-books">
+    <h3 class="section-head">Every Dollar, Divided <span class="section-sub">— what one dollar of sales becomes</span></h3>
+    <div class="dollar-split" id="dollarSplit"></div>
+
+    <div class="section-rule"></div>
+
     <h3 class="section-head">The Week's Ledger <span class="section-sub">— where every dollar went</span></h3>
     <table class="ledger" id="ledgerTable">
       <tbody>
