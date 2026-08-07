@@ -1,11 +1,12 @@
 // The Storefront Ledger — "From the Editor" column
-// Written by Gemini (primary) with Grok as understudy — whichever answers first
-// gets the byline. Keys live server-side in Netlify env vars only.
+// Written by Gemini (primary) with Groq as understudy — whichever answers first
+// gets the byline. House keys live in Netlify env vars; a reader may pass their
+// own keys in the request body to write with those instead.
 
 'use strict';
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-const GROK_MODEL = process.env.GROK_MODEL || 'grok-3-mini';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 function buildPrompt(figures) {
   return `You are the anonymous editor of "The Storefront Ledger", a small
@@ -27,10 +28,13 @@ Return ONLY the 3 paragraphs, separated by a blank line. No title, no signature.
 
 async function askGemini(apiKey, prompt) {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.8, maxOutputTokens: 500 },
@@ -44,25 +48,25 @@ async function askGemini(apiKey, prompt) {
   return { text, model: GEMINI_MODEL };
 }
 
-async function askGrok(apiKey, prompt) {
-  const res = await fetch('https://api.x.ai/v1/chat/completions', {
+async function askGroq(apiKey, prompt) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: GROK_MODEL,
+      model: GROQ_MODEL,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.8,
       max_tokens: 500,
     }),
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(json.error?.message || json.error || `Grok ${res.status}`);
+  if (!res.ok) throw new Error(json.error?.message || `Groq ${res.status}`);
   const text = json.choices?.[0]?.message?.content?.trim();
-  if (!text) throw new Error('Grok returned no text');
-  return { text, model: GROK_MODEL };
+  if (!text) throw new Error('Groq returned no text');
+  return { text, model: `groq/${GROQ_MODEL}` };
 }
 
 exports.handler = async (event) => {
@@ -76,10 +80,17 @@ exports.handler = async (event) => {
     return { statusCode: 204, headers: cors, body: '' };
   }
 
-  const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-  const grokKey = (process.env.GROK_API_KEY || '').trim();
+  let body = {};
+  try {
+    body = JSON.parse(event.body || '{}');
+  } catch { /* keep empty — the editor can still write a general column */ }
 
-  if (!geminiKey && !grokKey) {
+  // A reader's own keys (from the Settings page) outrank the house keys.
+  const ownKeys = body.keys || {};
+  const geminiKey = (ownKeys.gemini || process.env.GEMINI_API_KEY || '').trim();
+  const groqKey = (ownKeys.groq || process.env.GROQ_API_KEY || '').trim();
+
+  if (!geminiKey && !groqKey) {
     return {
       statusCode: 200,
       headers: cors,
@@ -87,18 +98,14 @@ exports.handler = async (event) => {
     };
   }
 
-  let figures = {};
-  try {
-    figures = JSON.parse(event.body || '{}');
-  } catch { /* keep empty — the editor can still write a general column */ }
-
+  const figures = { period: body.period, range: body.range, kpis: body.kpis };
   const prompt = buildPrompt(figures);
   const errors = [];
 
-  // Gemini writes the column; Grok fills in when Gemini can't make deadline.
+  // Gemini writes the column; Groq fills in when Gemini can't make deadline.
   for (const attempt of [
     geminiKey && (() => askGemini(geminiKey, prompt)),
-    grokKey && (() => askGrok(grokKey, prompt)),
+    groqKey && (() => askGroq(groqKey, prompt)),
   ].filter(Boolean)) {
     try {
       const { text, model } = await attempt();
