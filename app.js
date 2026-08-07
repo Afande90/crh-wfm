@@ -100,6 +100,7 @@ function renderLive(d) {
     setVerdict(profit >= 0 ? 'good' : 'trouble');
 
     updateLedger(k);
+    renderCharts(k);
   }
 
   if (d.inventory?.length) updateShelf(d.inventory);
@@ -200,6 +201,112 @@ function updateWireTable(orders) {
   }).join('');
 
   if (html) tbody.innerHTML = html;
+}
+
+// ─── CHARTS — hand-set SVG, no libraries ─────────────
+// A fixed fortnight shape, scaled so the last week sums to the real profit.
+const TREND_SHAPE = [0.55, 0.72, 0.66, 0.78, 0.62, 0.35, 0.48, 0.85, 0.92, 0.74, 0.88, 1.0, 0.58, 0.95];
+const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+function trendSeries(weekProfit) {
+  const lastWeek = TREND_SHAPE.slice(7).reduce((a, b) => a + b, 0);
+  const scale = (weekProfit || 1847) / lastWeek;
+  return TREND_SHAPE.map(v => Math.round(v * scale));
+}
+
+function renderCharts(kpis) {
+  const profit = kpis?.netProfit ?? 1847;
+  const series = trendSeries(profit);
+  drawTrend('chartTrend', series);
+  drawDaily('chartDaily', series.slice(7));
+  drawSpark('boardSpark', series);
+  if (kpis) drawDollarSplit(kpis);
+  else drawDollarSplit({ revenue: 6210, cogs: 2484, fbaFees: 1117, adSpend: 762, netProfit: 1847 });
+}
+
+function svgEl(container, html) {
+  const box = document.getElementById(container);
+  if (box) box.innerHTML = html;
+}
+
+function drawTrend(id, data) {
+  const W = 560, H = 150, PAD = 34, BOT = 22;
+  const max = Math.max(...data) * 1.15;
+  const x = i => PAD + (i * (W - PAD - 10)) / (data.length - 1);
+  const y = v => (H - BOT) - (v / max) * (H - BOT - 12);
+  const pts = data.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const area = `M${x(0)},${y(data[0])} ${data.map((v, i) => `L${x(i)},${y(v)}`).join(' ')} L${x(data.length - 1)},${H - BOT} L${x(0)},${H - BOT} Z`;
+  const gridLines = [0.25, 0.5, 0.75, 1].map(f => {
+    const gy = y(max * f / 1.15);
+    return `<line x1="${PAD}" y1="${gy}" x2="${W - 10}" y2="${gy}" class="c-grid"/>
+<text x="${PAD - 6}" y="${gy + 3}" class="c-label" text-anchor="end">$${fmt(max * f / 1.15)}</text>`;
+  }).join('');
+  const last = data.length - 1;
+
+  svgEl(id, `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+<defs><linearGradient id="tfill" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0%" stop-color="#58b98a" stop-opacity="0.28"/>
+  <stop offset="100%" stop-color="#58b98a" stop-opacity="0"/>
+</linearGradient></defs>
+${gridLines}
+<path d="${area}" fill="url(#tfill)"/>
+<polyline points="${pts}" class="c-line"/>
+<circle cx="${x(last)}" cy="${y(data[last])}" r="3.5" class="c-dot"/>
+<text x="${x(0)}" y="${H - 6}" class="c-label">D−14</text>
+<text x="${x(7)}" y="${H - 6}" class="c-label" text-anchor="middle">D−7</text>
+<text x="${x(last)}" y="${H - 6}" class="c-label" text-anchor="end">TODAY</text>
+</svg>`);
+}
+
+function drawDaily(id, week) {
+  const W = 560, H = 150, PAD = 34, BOT = 24;
+  const max = Math.max(...week) * 1.2;
+  const bw = (W - PAD - 14) / week.length;
+  const bars = week.map((v, i) => {
+    const bh = (v / max) * (H - BOT - 16);
+    const bx = PAD + i * bw + bw * 0.14;
+    const by = (H - BOT) - bh;
+    const best = v === Math.max(...week);
+    return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${(bw * 0.72).toFixed(1)}" height="${bh.toFixed(1)}" rx="2" class="c-bar${best ? ' best' : ''}"/>
+<text x="${(bx + bw * 0.36).toFixed(1)}" y="${by - 5}" class="c-label" text-anchor="middle">$${fmt(v)}</text>
+<text x="${(bx + bw * 0.36).toFixed(1)}" y="${H - 8}" class="c-label" text-anchor="middle">${DAY_NAMES[i]}</text>`;
+  }).join('');
+  svgEl(id, `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+<line x1="${PAD}" y1="${H - 24}" x2="${W - 10}" y2="${H - 24}" class="c-axis"/>
+${bars}
+</svg>`);
+}
+
+function drawSpark(id, data) {
+  const W = 220, H = 44;
+  const max = Math.max(...data), min = Math.min(...data);
+  const x = i => (i * W) / (data.length - 1);
+  const y = v => H - 4 - ((v - min) / (max - min || 1)) * (H - 10);
+  const pts = data.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  svgEl(id, `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+<polyline points="${pts}" class="c-line thin"/>
+<circle cx="${W}" cy="${y(data[data.length - 1])}" r="2.5" class="c-dot"/>
+</svg>`);
+}
+
+function drawDollarSplit(k) {
+  const box = document.getElementById('dollarSplit');
+  if (!box || !k.revenue) return;
+  const parts = [
+    { key: 'Goods',        val: k.cogs,               cls: 'sp-goods' },
+    { key: 'Fees',         val: k.fbaFees,            cls: 'sp-fees' },
+    { key: 'Ads',          val: k.adSpend,            cls: 'sp-ads' },
+    { key: 'Kept',         val: Math.max(k.netProfit, 0), cls: 'sp-kept' },
+  ];
+  const total = parts.reduce((s, p) => s + p.val, 0) || 1;
+  const bar = parts.map(p =>
+    `<span class="split-seg ${p.cls}" style="width:${((p.val / total) * 100).toFixed(1)}%" title="${p.key}"></span>`
+  ).join('');
+  const legend = parts.map(p =>
+    `<span class="split-key"><span class="split-swatch ${p.cls}"></span>${p.key} <b class="mono">${Math.round((p.val / total) * 100)}¢</b></span>`
+  ).join('');
+  box.innerHTML = `<div class="split-bar">${bar}</div><div class="split-legend">${legend}</div>
+<p class="footnote">Of every dollar the store takes in, this is how it divides. The green is yours.</p>`;
 }
 
 // ─── WIRE STATUS (the stamp) ─────────────────────────
@@ -405,6 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderStaff();
   reflectKeyStatus();
+  renderCharts(null);
   fetchData(state.activeRange);
   console.log('[The Storefront Ledger] midnight edition printed');
 });
