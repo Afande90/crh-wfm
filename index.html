@@ -3,631 +3,233 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FBA Intelligence — Store Command</title>
+<title>The Storefront Ledger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════
-     TOPBAR — always visible, data-first
-═══════════════════════════════════════════ -->
-<header class="topbar">
-  <div class="topbar-left">
-    <span class="logo-mark">FBA</span>
-    <span class="logo-divider">|</span>
-    <span class="logo-label">STORE COMMAND</span>
-  </div>
-  <div class="topbar-center">
-    <div class="market-ticker">
-      <span class="ticker-item tick-up">NET PROFIT (7D) <b>$1,847</b></span>
-      <span class="ticker-sep">·</span>
-      <span class="ticker-item tick-up">REVENUE <b>$6,210</b></span>
-      <span class="ticker-sep">·</span>
-      <span class="ticker-item tick-dn">AVG MARGIN <b>29.7%</b></span>
-      <span class="ticker-sep">·</span>
-      <span class="ticker-item tick-up">UNITS SOLD <b>831</b></span>
-      <span class="ticker-sep">·</span>
-      <span class="ticker-item tick-neutral">NEXT PAYOUT <b>$2,940</b></span>
+<!-- ══════════ MASTHEAD ══════════ -->
+<header class="masthead">
+  <div class="mast-rule-top"></div>
+  <div class="mast-row">
+    <div class="mast-wire">
+      <span class="stamp" id="wireStamp">WIRE · CONNECTING…</span>
+    </div>
+    <h1 class="mast-title">The Storefront Ledger</h1>
+    <div class="mast-editions">
+      <button class="edition active" onclick="setRange(this,'7D')">Weekly</button>
+      <button class="edition" onclick="setRange(this,'30D')">Monthly</button>
+      <button class="edition" onclick="setRange(this,'MTD')">This&nbsp;Month</button>
     </div>
   </div>
-  <div class="topbar-right">
-    <span class="live-badge"><span class="live-dot"></span>LIVE</span>
-    <span class="sync-time">SYNC just now</span>
-    <span class="alert-count" id="alertBadge">3 ACTIONS</span>
-    <div class="range-tabs">
-      <button class="rtab active" onclick="setRange(this,'7D')">7D</button>
-      <button class="rtab" onclick="setRange(this,'30D')">30D</button>
-      <button class="rtab" onclick="setRange(this,'MTD')">MTD</button>
-    </div>
+  <div class="mast-sub">
+    <span id="mastDate">—</span>
+    <span class="mast-dot">·</span>
+    <span>An honest account of one small business</span>
+    <span class="mast-dot">·</span>
+    <span id="mastMode" class="mono">SANDBOX EDITION</span>
   </div>
+  <div class="mast-rule-bottom"></div>
 </header>
 
-<!-- ═══════════════════════════════════════════
-     SIDEBAR — organized the way an owner thinks:
-     today → money → stock → customers → growth
-═══════════════════════════════════════════ -->
-<div class="layout">
-<aside class="sidebar">
-  <nav class="nav-group">
-    <div class="nav-section-label">TODAY</div>
-    <a class="nav-item active" onclick="showView('overview')">
-      <span class="nav-icon">▪</span> Command Center
-    </a>
-    <a class="nav-item" onclick="showView('brief')">
-      <span class="nav-icon">▪</span> Monday Brief
-      <span class="nav-badge new">NEW</span>
-    </a>
-  </nav>
-  <nav class="nav-group">
-    <div class="nav-section-label">YOUR MONEY</div>
-    <a class="nav-item" onclick="showView('profit')">
-      <span class="nav-icon">▪</span> Profitability
-    </a>
-    <a class="nav-item" onclick="showView('cash')">
-      <span class="nav-icon">▪</span> Cash &amp; Payouts
-      <span class="nav-badge new">NEW</span>
-    </a>
-  </nav>
-  <nav class="nav-group">
-    <div class="nav-section-label">YOUR STOCK</div>
-    <a class="nav-item" onclick="showView('inventory')">
-      <span class="nav-icon">▪</span> Inventory
-    </a>
-  </nav>
-  <nav class="nav-group">
-    <div class="nav-section-label">YOUR CUSTOMERS</div>
-    <a class="nav-item" onclick="showView('customers')">
-      <span class="nav-icon">▪</span> Orders &amp; Feedback
-    </a>
-  </nav>
-  <nav class="nav-group">
-    <div class="nav-section-label">GROWTH</div>
-    <a class="nav-item" onclick="showView('ai-insights')">
-      <span class="nav-icon">▪</span> AI Insights
-    </a>
-    <a class="nav-item" onclick="showView('pricing')">
-      <span class="nav-icon">▪</span> Price Optimizer
-    </a>
-    <a class="nav-item" onclick="showView('opportunity')">
-      <span class="nav-icon">▪</span> Opportunities
-    </a>
-    <a class="nav-item phase3" onclick="showView('ads')">
-      <span class="nav-icon">▪</span> Advertising
-      <span class="nav-badge ph3">SOON</span>
-    </a>
-  </nav>
-  <nav class="nav-group">
-    <div class="nav-section-label">SYSTEM</div>
-    <a class="nav-item" onclick="showView('settings')">
-      <span class="nav-icon">▪</span> Settings
-    </a>
-  </nav>
+<main class="paper">
 
-  <div class="sidebar-status">
-    <div class="status-row"><span class="sd">API</span><span class="sv ok">CONNECTED</span></div>
-    <div class="status-row"><span class="sd">MODE</span><span class="sv" id="modeBadge">SANDBOX</span></div>
-    <div class="status-row"><span class="sd">MARKET</span><span class="sv" id="marketBadge">—</span></div>
-  </div>
-</aside>
-
-<!-- ═══════════════════════════════════════════
-     MAIN CONTENT AREA
-═══════════════════════════════════════════ -->
-<main class="main-content">
-
-  <!-- ── VIEW: COMMAND CENTER ── -->
-  <div class="view active" id="view-overview">
-
-    <!-- Plain-language health strip: an owner reads this in 5 seconds -->
-    <div class="tl-strip">
-      <div class="tl-item">
-        <span class="tl-dot green"></span>
-        <span class="tl-label">PROFIT</span>
-        <span class="tl-status green">GOOD</span>
-      </div>
-      <div class="tl-sep">|</div>
-      <div class="tl-item">
-        <span class="tl-dot green"></span>
-        <span class="tl-label">CASH</span>
-        <span class="tl-status green">HEALTHY</span>
-      </div>
-      <div class="tl-sep">|</div>
-      <div class="tl-item">
-        <span class="tl-dot amber"></span>
-        <span class="tl-label">STOCK</span>
-        <span class="tl-status amber">1 REORDER DUE</span>
-      </div>
-      <div class="tl-sep">|</div>
-      <div class="tl-item">
-        <span class="tl-dot red"></span>
-        <span class="tl-label">BUY BOX</span>
-        <span class="tl-status red">ACTION REQUIRED</span>
-      </div>
-      <div class="tl-sep">|</div>
-      <div class="tl-item">
-        <span class="tl-dot green"></span>
-        <span class="tl-label">ACCOUNT</span>
-        <span class="tl-status green">GOOD</span>
-      </div>
+  <!-- ══════════ LEAD STORY ══════════ -->
+  <section class="lead">
+    <div class="lead-left">
+      <div class="kicker">THE BOTTOM LINE — <span id="leadPeriod">THIS WEEK</span></div>
+      <div class="lead-figure" id="leadProfit">$1,847</div>
+      <h2 class="lead-headline" id="leadHeadline">
+        Your store earned a healthy profit this week, up 12.4% — the measuring cups carried the paper.
+      </h2>
+      <p class="lead-deck" id="leadDeck">
+        Net of every cost — goods, Amazon's cut, fulfilment, and advertising — this is what actually
+        stayed in the till. Best day: Monday. Slowest: Saturday.
+      </p>
     </div>
-
-    <!-- KPI Row -->
-    <div class="kpi-row">
-      <div class="kpi-card accent-green">
-        <div class="kpi-meta">
-          <span class="kpi-label">NET PROFIT</span>
-          <span class="kpi-period">7D</span>
+    <div class="lead-right">
+      <div class="stat-stack">
+        <div class="stat">
+          <span class="stat-label">Revenue</span>
+          <span class="stat-value mono" id="statRevenue">$6,210</span>
+          <span class="stat-note up" id="statRevenueNote">▲ 8.1%</span>
         </div>
-        <div class="kpi-value">$1,847</div>
-        <div class="kpi-footer">
-          <span class="delta up">▲ 12.4%</span>
-          <span class="kpi-sub">vs last week</span>
+        <div class="stat">
+          <span class="stat-label">Units sold</span>
+          <span class="stat-value mono" id="statUnits">831</span>
+          <span class="stat-note up" id="statUnitsNote">▲ 5.6%</span>
         </div>
-        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,20 13,16 26,14 40,17 53,10 66,7 80,4" fill="none" stroke="var(--green)" stroke-width="1.5"/></svg>
-      </div>
-      <div class="kpi-card accent-blue">
-        <div class="kpi-meta">
-          <span class="kpi-label">REVENUE</span>
-          <span class="kpi-period">7D</span>
+        <div class="stat">
+          <span class="stat-label">Margin kept</span>
+          <span class="stat-value mono" id="statMargin">29.7%</span>
+          <span class="stat-note dn" id="statMarginNote">▼ 1.2 pts</span>
         </div>
-        <div class="kpi-value">$6,210</div>
-        <div class="kpi-footer">
-          <span class="delta up">▲ 8.1%</span>
-          <span class="kpi-sub">vs last week</span>
-        </div>
-        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,18 13,15 26,12 40,14 53,9 66,6 80,5" fill="none" stroke="var(--blue)" stroke-width="1.5"/></svg>
-      </div>
-      <div class="kpi-card accent-amber">
-        <div class="kpi-meta">
-          <span class="kpi-label">NET MARGIN</span>
-          <span class="kpi-period">7D</span>
-        </div>
-        <div class="kpi-value">29.7%</div>
-        <div class="kpi-footer">
-          <span class="delta dn">▼ 1.2%</span>
-          <span class="kpi-sub">vs last week</span>
-        </div>
-        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,8 13,9 26,10 40,12 53,14 66,15 80,16" fill="none" stroke="var(--amber)" stroke-width="1.5"/></svg>
-      </div>
-      <div class="kpi-card accent-slate">
-        <div class="kpi-meta">
-          <span class="kpi-label">UNITS SOLD</span>
-          <span class="kpi-period">7D</span>
-        </div>
-        <div class="kpi-value">831</div>
-        <div class="kpi-footer">
-          <span class="delta up">▲ 5.6%</span>
-          <span class="kpi-sub">vs last week</span>
-        </div>
-        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,20 13,17 26,15 40,16 53,11 66,9 80,7" fill="none" stroke="var(--slate)" stroke-width="1.5"/></svg>
-      </div>
-      <div class="kpi-card accent-red">
-        <div class="kpi-meta">
-          <span class="kpi-label">FBA FEES</span>
-          <span class="kpi-period">7D</span>
-        </div>
-        <div class="kpi-value">$1,117</div>
-        <div class="kpi-footer">
-          <span class="delta dn">▲ 3.2%</span>
-          <span class="kpi-sub">vs last week</span>
-        </div>
-        <svg class="kpi-spark" viewBox="0 0 80 24"><polyline points="0,18 13,17 26,16 40,15 53,14 66,13 80,11" fill="none" stroke="var(--red)" stroke-width="1.5"/></svg>
-      </div>
-    </div>
-
-    <!-- Charts + Waterfall row -->
-    <div class="mid-grid">
-
-      <!-- Profit trend chart -->
-      <div class="panel panel-lg">
-        <div class="panel-header">
-          <div class="panel-title">NET PROFIT TREND <span class="panel-sub">— Daily · 14 Days</span></div>
-          <div class="panel-actions">
-            <span class="pact active">LINE</span>
-            <span class="pact">BAR</span>
-          </div>
-        </div>
-        <div class="chart-area">
-          <svg viewBox="0 0 560 120" xmlns="http://www.w3.org/2000/svg" class="trend-svg">
-            <defs>
-              <linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#10b981" stop-opacity="0.18"/>
-                <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
-              </linearGradient>
-            </defs>
-            <line x1="0" y1="20" x2="560" y2="20" stroke="#1a2542" stroke-width="1"/>
-            <line x1="0" y1="50" x2="560" y2="50" stroke="#1a2542" stroke-width="1"/>
-            <line x1="0" y1="80" x2="560" y2="80" stroke="#1a2542" stroke-width="1"/>
-            <line x1="0" y1="110" x2="560" y2="110" stroke="#1a2542" stroke-width="1"/>
-            <text x="2" y="18" class="chart-label">$350</text>
-            <text x="2" y="48" class="chart-label">$250</text>
-            <text x="2" y="78" class="chart-label">$150</text>
-            <text x="2" y="108" class="chart-label">$50</text>
-            <path d="M40,90 L80,78 L120,70 L160,75 L200,58 L240,50 L280,62 L320,44 L360,38 L400,46 L440,30 L480,24 L520,20 L560,16 L560,115 L40,115Z" fill="url(#gfill)"/>
-            <polyline points="40,90 80,78 120,70 160,75 200,58 240,50 280,62 320,44 360,38 400,46 440,30 480,24 520,20 560,16" fill="none" stroke="#10b981" stroke-width="2" stroke-linejoin="round"/>
-            <circle cx="560" cy="16" r="3.5" fill="#10b981"/>
-            <line x1="560" y1="16" x2="560" y2="115" stroke="#10b981" stroke-width="0.8" stroke-dasharray="3,3"/>
-            <text x="37" y="118" class="chart-label">D-14</text>
-            <text x="235" y="118" class="chart-label">D-7</text>
-            <text x="543" y="118" class="chart-label">TODAY</text>
-          </svg>
-        </div>
-        <div class="chart-footer">
-          <span>PEAK <b class="mono green">$348</b> Mon</span>
-          <span>LOW <b class="mono red">$89</b> Sat</span>
-          <span>AVG <b class="mono">$264/day</b></span>
-          <span>TOTAL <b class="mono green">$1,847</b></span>
-        </div>
-      </div>
-
-      <!-- Fee waterfall -->
-      <div class="panel panel-sm">
-        <div class="panel-header">
-          <div class="panel-title">WHERE THE MONEY GOES <span class="panel-sub">— This Week</span></div>
-        </div>
-        <div class="waterfall">
-          <div class="wf-row">
-            <span class="wf-label">GROSS REVENUE</span>
-            <div class="wf-bar-wrap"><div class="wf-bar" style="width:100%;background:var(--blue)"></div></div>
-            <span class="wf-val mono blue">$6,210</span>
-          </div>
-          <div class="wf-row">
-            <span class="wf-label">COGS (WAC)</span>
-            <div class="wf-bar-wrap"><div class="wf-bar" style="width:40%;background:var(--red)"></div></div>
-            <span class="wf-val mono red">-$2,484</span>
-          </div>
-          <div class="wf-row">
-            <span class="wf-label">FBA FEES</span>
-            <div class="wf-bar-wrap"><div class="wf-bar" style="width:12%;background:var(--amber)"></div></div>
-            <span class="wf-val mono amber">-$683</span>
-          </div>
-          <div class="wf-row">
-            <span class="wf-label">REFERRAL FEES</span>
-            <div class="wf-bar-wrap"><div class="wf-bar" style="width:7%;background:var(--amber)"></div></div>
-            <span class="wf-val mono amber">-$434</span>
-          </div>
-          <div class="wf-row">
-            <span class="wf-label">AD SPEND</span>
-            <div class="wf-bar-wrap"><div class="wf-bar" style="width:12%;background:var(--slate)"></div></div>
-            <span class="wf-val mono slate">-$762</span>
-          </div>
-          <div class="wf-divider"></div>
-          <div class="wf-row total">
-            <span class="wf-label">NET PROFIT</span>
-            <div class="wf-bar-wrap"><div class="wf-bar" style="width:30%;background:var(--green)"></div></div>
-            <span class="wf-val mono green">$1,847</span>
-          </div>
-          <div class="wf-margin">MARGIN <b class="green">29.7%</b></div>
+        <div class="stat">
+          <span class="stat-label">Next payout</span>
+          <span class="stat-value mono" id="statPayout">$2,940</span>
+          <span class="stat-note" id="statPayoutNote">est. 7 days</span>
         </div>
       </div>
     </div>
+  </section>
 
-    <!-- ASIN Table -->
-    <div class="panel" style="margin-bottom:12px">
-      <div class="panel-header">
-        <div class="panel-title">PER-PRODUCT PROFITABILITY <span class="panel-sub">— Net profit after all fees · WAC method</span></div>
-        <div class="panel-actions"><span class="pact active">ALL</span><span class="pact">ACTIVE</span><span class="pact">FLAGGED</span></div>
-      </div>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>PRODUCT</th>
-              <th class="num">REVENUE</th>
-              <th class="num">COGS</th>
-              <th class="num">FBA FEES</th>
-              <th class="num">AD SPEND</th>
-              <th class="num">NET PROFIT</th>
-              <th class="num">MARGIN</th>
-              <th class="num">UNITS</th>
-              <th class="num">DAYS INV</th>
-              <th>STATUS</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <div class="asin-name">Measuring Cup Set Pro</div>
-                <div class="asin-id mono">B08XXXX1234</div>
-              </td>
-              <td class="num mono">$3,102</td>
-              <td class="num mono red">$1,241</td>
-              <td class="num mono amber">$434</td>
-              <td class="num mono slate">$380</td>
-              <td class="num mono green bold">$1,047</td>
-              <td class="num mono green">33.7%</td>
-              <td class="num mono">415</td>
-              <td class="num mono green">102d</td>
-              <td><span class="status-pill green">GOOD</span></td>
-            </tr>
-            <tr>
-              <td>
-                <div class="asin-name">Measuring Cup 5-Piece</div>
-                <div class="asin-id mono">B08XXXX5678</div>
-              </td>
-              <td class="num mono">$2,488</td>
-              <td class="num mono red">$995</td>
-              <td class="num mono amber">$348</td>
-              <td class="num mono slate">$345</td>
-              <td class="num mono green bold">$800</td>
-              <td class="num mono green">32.1%</td>
-              <td class="num mono">332</td>
-              <td class="num mono green">87d</td>
-              <td><span class="status-pill green">GOOD</span></td>
-            </tr>
-            <tr class="row-flagged">
-              <td>
-                <div class="asin-name">Paracord Bundle 100m</div>
-                <div class="asin-id mono">B09XXXX9012</div>
-              </td>
-              <td class="num mono">$620</td>
-              <td class="num mono red">$248</td>
-              <td class="num mono amber">$112</td>
-              <td class="num mono slate">$—</td>
-              <td class="num mono amber bold">$—</td>
-              <td class="num mono amber">19.4% ▼</td>
-              <td class="num mono">84</td>
-              <td class="num mono amber">56d !</td>
-              <td><span class="status-pill amber">MONITOR</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+  <div class="section-rule double"></div>
+
+  <!-- ══════════ DISPATCHES — the action queue ══════════ -->
+  <section class="band">
+    <h3 class="section-head">Dispatches <span class="section-sub">— matters requiring the proprietor's attention</span></h3>
+    <div class="dispatch-row" id="dispatchRow">
+      <article class="dispatch urgent">
+        <div class="dispatch-stamp">ACT TODAY</div>
+        <h4 class="dispatch-title">The Buy Box has been taken.</h4>
+        <p class="dispatch-body">An unknown seller is undercutting the Paracord Bundle at $6.89. Until reclaimed, every sale on that listing is theirs, not yours.</p>
+        <div class="dispatch-do">→ Verify the hijacker through Brand Registry</div>
+      </article>
+      <article class="dispatch">
+        <div class="dispatch-stamp week">THIS WEEK</div>
+        <h4 class="dispatch-title">Paracord margin slips below the floor.</h4>
+        <p class="dispatch-body">19.4% against your 20% rule. Thin margins compound quietly — a small correction now beats a painful one later.</p>
+        <div class="dispatch-do">→ Raise price $0.30, or renegotiate cost</div>
+      </article>
+      <article class="dispatch">
+        <div class="dispatch-stamp week">THIS WEEK</div>
+        <h4 class="dispatch-title">The shelf runs bare in 56 days.</h4>
+        <p class="dispatch-body">Paracord stock at current pace clears in under two months, and restock takes six weeks. The window to reorder is now.</p>
+        <div class="dispatch-do">→ Order 200 units within 14 days</div>
+      </article>
+    </div>
+  </section>
+
+  <div class="section-rule"></div>
+
+  <!-- ══════════ TWO COLUMNS: LEDGER + SHELF ══════════ -->
+  <section class="columns">
+    <div class="col">
+      <h3 class="section-head">The Week's Ledger <span class="section-sub">— where every dollar went</span></h3>
+      <table class="ledger" id="ledgerTable">
+        <tbody>
+          <tr>
+            <td class="l-item">Gross takings</td>
+            <td class="l-bar"><span class="bar in" style="width:100%"></span></td>
+            <td class="l-amt mono" data-ledger="revenue">$6,210</td>
+          </tr>
+          <tr>
+            <td class="l-item">Cost of goods</td>
+            <td class="l-bar"><span class="bar out" style="width:40%"></span></td>
+            <td class="l-amt mono neg" data-ledger="cogs">−$2,484</td>
+          </tr>
+          <tr>
+            <td class="l-item">Fulfilment &amp; fees</td>
+            <td class="l-bar"><span class="bar out" style="width:18%"></span></td>
+            <td class="l-amt mono neg" data-ledger="fbaFees">−$1,117</td>
+          </tr>
+          <tr>
+            <td class="l-item">Advertising</td>
+            <td class="l-bar"><span class="bar out" style="width:12%"></span></td>
+            <td class="l-amt mono neg" data-ledger="adSpend">−$762</td>
+          </tr>
+          <tr class="l-total">
+            <td class="l-item">Kept in the till</td>
+            <td class="l-bar"><span class="bar kept" style="width:30%"></span></td>
+            <td class="l-amt mono kept" data-ledger="netProfit">$1,847</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="footnote">Margin of <b id="ledgerMargin">29.7%</b> on the period. Cost of goods estimated by weighted average until the Finances API is connected in production.</p>
     </div>
 
-    <!-- Bottom row: Inventory + Action Queue + AI -->
-    <div class="bottom-grid">
+    <div class="col-rule"></div>
 
-      <!-- Inventory -->
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">INVENTORY — DAYS OF SUPPLY <span class="panel-sub">80d threshold</span></div>
-          <span class="panel-link" onclick="showView('inventory')">VIEW ALL →</span>
+    <div class="col">
+      <h3 class="section-head">The Shelf <span class="section-sub">— days of stock remaining</span></h3>
+      <div class="shelf" id="shelfList">
+        <div class="shelf-row">
+          <div class="shelf-name">Measuring Cup Set Pro <span class="shelf-sku mono">B08XXXX1234</span></div>
+          <div class="shelf-track"><span class="shelf-fill ok" style="width:85%"></span></div>
+          <div class="shelf-days mono">102<span class="d">d</span></div>
         </div>
-        <div class="inv-list">
-          <div class="inv-row">
-            <div class="inv-info">
-              <span class="inv-name">Measuring Cup Set Pro</span>
-              <span class="inv-sku mono">B08XXXX1234</span>
-            </div>
-            <div class="inv-bar-wrap">
-              <div class="inv-bar green" style="width:85%"></div>
-            </div>
-            <span class="inv-days mono green">102d</span>
-            <span class="status-pill green sm">OK</span>
-          </div>
-          <div class="inv-row">
-            <div class="inv-info">
-              <span class="inv-name">Measuring Cup 5-Piece</span>
-              <span class="inv-sku mono">B08XXXX5678</span>
-            </div>
-            <div class="inv-bar-wrap">
-              <div class="inv-bar green" style="width:72%"></div>
-            </div>
-            <span class="inv-days mono green">87d</span>
-            <span class="status-pill green sm">OK</span>
-          </div>
-          <div class="inv-row flagged">
-            <div class="inv-info">
-              <span class="inv-name">Paracord Bundle 100m</span>
-              <span class="inv-sku mono">B09XXXX9012</span>
-            </div>
-            <div class="inv-bar-wrap">
-              <div class="inv-bar amber" style="width:38%"></div>
-            </div>
-            <span class="inv-days mono amber">56d</span>
-            <span class="status-pill amber sm">REORDER</span>
-          </div>
+        <div class="shelf-row">
+          <div class="shelf-name">Measuring Cup 5-Piece <span class="shelf-sku mono">B08XXXX5678</span></div>
+          <div class="shelf-track"><span class="shelf-fill ok" style="width:72%"></span></div>
+          <div class="shelf-days mono">87<span class="d">d</span></div>
+        </div>
+        <div class="shelf-row low">
+          <div class="shelf-name">Paracord Bundle 100m <span class="shelf-sku mono">B09XXXX9012</span></div>
+          <div class="shelf-track"><span class="shelf-fill low" style="width:38%"></span></div>
+          <div class="shelf-days mono">56<span class="d">d</span></div>
         </div>
       </div>
-
-      <!-- Action Queue: every alert paired with ONE next step -->
-      <div class="panel">
-        <div class="panel-header">
-          <div class="panel-title">ACTION QUEUE <span class="panel-sub">— what to do next</span></div>
-          <span class="alert-count-sm">3 OPEN</span>
-        </div>
-        <div class="alert-list">
-          <div class="alert-row critical">
-            <div class="alert-severity">DO NOW</div>
-            <div class="alert-body">
-              <div class="alert-title">BUY BOX LOST — Paracord Bundle</div>
-              <div class="alert-desc">Unknown seller winning at $6.89.</div>
-              <div class="alert-action">→ Verify hijacker via Brand Registry today</div>
-            </div>
-            <div class="alert-time mono">14m</div>
-          </div>
-          <div class="alert-row warning">
-            <div class="alert-severity">THIS WEEK</div>
-            <div class="alert-body">
-              <div class="alert-title">MARGIN SLIPPING — Paracord Bundle</div>
-              <div class="alert-desc">19.4%, below your 20% floor.</div>
-              <div class="alert-action">→ Raise price $0.30 or renegotiate COGS</div>
-            </div>
-            <div class="alert-time mono">2h</div>
-          </div>
-          <div class="alert-row warning">
-            <div class="alert-severity">THIS WEEK</div>
-            <div class="alert-body">
-              <div class="alert-title">REORDER — Paracord Bundle</div>
-              <div class="alert-desc">56d supply left at current velocity.</div>
-              <div class="alert-action">→ Order 200 units within 14 days</div>
-            </div>
-            <div class="alert-time mono">Today</div>
-          </div>
-          <div class="alert-row info">
-            <div class="alert-severity">FYI</div>
-            <div class="alert-body">
-              <div class="alert-title">FBA SHIPMENT ARRIVED — SHIP-001</div>
-              <div class="alert-desc">320 units checked in at ONT8.</div>
-            </div>
-            <div class="alert-time mono">Yest.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- AI Insight -->
-      <div class="panel ai-panel">
-        <div class="panel-header">
-          <div class="panel-title">AI ADVISOR <span class="panel-sub">— Weekly Insight</span></div>
-          <span class="ai-model mono">auto</span>
-        </div>
-        <div class="ai-body">
-          <p>
-            <b class="green">Measuring Cup Set Pro</b> is your strongest performer at 33.7% margin.
-            <b class="amber">Paracord Bundle</b> has compounding pressure: margin below threshold + suspected hijacker + reorder point approaching — act on the queue items this week.
-          </p>
-          <p style="margin-top:10px">
-            <b>Income opportunity:</b> Raising Measuring Cup Set Pro price by $0.50 would add approximately <b class="green">+$207 net profit</b> this week with minimal conversion impact.
-          </p>
-          <p style="margin-top:10px">
-            <b>Growth signal:</b> Home &amp; Kitchen measuring category shows +14% YoY growth. Keep inventory above 90d to capture share.
-          </p>
-        </div>
-        <div class="ai-footer">
-          <span class="mono">Generated Mon 09:00 · Next Monday 09:00</span>
-          <button class="ai-refresh-btn">REFRESH NOW</button>
-        </div>
-      </div>
-
+      <p class="footnote">The house rule: reorder at 80 days. One line item is past due — see Dispatches.</p>
     </div>
-  </div><!-- /view-overview -->
+  </section>
 
-  <!-- ── VIEW: MONDAY BRIEF — the owner's week in plain language ── -->
-  <div class="view" id="view-brief">
-    <div class="brief-header">
-      <div class="brief-title">MONDAY BRIEF</div>
-      <div class="brief-date mono" id="briefDate">Week of —</div>
-    </div>
-    <div class="brief-grid">
-      <div class="panel brief-card">
-        <div class="brief-num green">1</div>
-        <div class="brief-headline">You made <b class="green">$1,847</b> net profit last week — up 12.4%.</div>
-        <div class="brief-detail">Both measuring cup products carried the week. Best day was Monday ($348).</div>
+  <div class="section-rule"></div>
+
+  <!-- ══════════ ORDER WIRE ══════════ -->
+  <section class="band">
+    <h3 class="section-head">The Order Wire <span class="section-sub">— latest sales, straight from Amazon</span></h3>
+    <table class="wire-table">
+      <thead>
+        <tr><th>Order</th><th>Placed</th><th class="num">Items</th><th class="num">Value</th><th>Standing</th></tr>
+      </thead>
+      <tbody id="ordersBody">
+        <tr><td class="mono">114-XXXXXXX-8801</td><td>Today, 09:12</td><td class="num mono">2</td><td class="num mono">$31.98</td><td><span class="tag ok">Shipped</span></td></tr>
+        <tr><td class="mono">114-XXXXXXX-8802</td><td>Today, 08:40</td><td class="num mono">1</td><td class="num mono">$12.99</td><td><span class="tag wait">Pending</span></td></tr>
+        <tr><td class="mono">114-XXXXXXX-8803</td><td>Yesterday, 22:15</td><td class="num mono">3</td><td class="num mono">$44.97</td><td><span class="tag ok">Shipped</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="section-rule"></div>
+
+  <!-- ══════════ THE FORECAST — cash ══════════ -->
+  <section class="band">
+    <h3 class="section-head">The Forecast <span class="section-sub">— money in, money out, next 30 days</span></h3>
+    <div class="forecast-row">
+      <div class="forecast-card">
+        <div class="fc-label">Coming in</div>
+        <div class="fc-value mono kept">+$6,040</div>
+        <div class="fc-note">Two settlements: Aug 14 (~$2,940) and Aug 28 (~$3,100)</div>
       </div>
-      <div class="panel brief-card">
-        <div class="brief-num amber">2</div>
-        <div class="brief-headline">Paracord Bundle needs a decision <b class="amber">this week</b>.</div>
-        <div class="brief-detail">Margin is under your 20% floor, a hijacker may hold the Buy Box, and stock hits reorder point in 14 days. Handle the Buy Box first — it blocks everything else.</div>
+      <div class="forecast-card">
+        <div class="fc-label">Going out</div>
+        <div class="fc-value mono neg">−$1,250</div>
+        <div class="fc-note">Paracord reorder $590 · advertising $660</div>
       </div>
-      <div class="panel brief-card">
-        <div class="brief-num blue">3</div>
-        <div class="brief-headline">Next payout is estimated at <b class="blue">$2,940</b>.</div>
-        <div class="brief-detail">If you reorder Paracord (200 units ≈ $590), you'll still have cushion for the ad budget.</div>
-      </div>
-      <div class="panel brief-card">
-        <div class="brief-num green">4</div>
-        <div class="brief-headline">One growth move: <b class="green">+$0.50</b> on Measuring Cup Set Pro.</div>
-        <div class="brief-detail">Estimated +$207/week at current velocity. Low risk — you hold the Buy Box at 98% on this listing.</div>
+      <div class="forecast-card">
+        <div class="fc-label">Room to move</div>
+        <div class="fc-value mono">$4,790</div>
+        <div class="fc-note">Enough to reorder and still fund one growth bet</div>
       </div>
     </div>
-    <div class="brief-footnote mono">The brief regenerates every Monday from your live SP-API data. As the business grows, sections for advertising, team, and cash forecasting slot in here.</div>
-  </div>
+  </section>
 
-  <!-- ── VIEW: CASH & PAYOUTS — small-business cash visibility ── -->
-  <div class="view" id="view-cash">
-    <div class="kpi-row cash-row">
-      <div class="kpi-card accent-blue">
-        <div class="kpi-meta"><span class="kpi-label">NEXT PAYOUT (EST)</span><span class="kpi-period">14 AUG</span></div>
-        <div class="kpi-value">$2,940</div>
-        <div class="kpi-footer"><span class="kpi-sub">settles in 7 days</span></div>
-      </div>
-      <div class="kpi-card accent-green">
-        <div class="kpi-meta"><span class="kpi-label">AVAILABLE AFTER COSTS</span><span class="kpi-period">EST</span></div>
-        <div class="kpi-value">$1,690</div>
-        <div class="kpi-footer"><span class="kpi-sub">after reorder + ad budget</span></div>
-      </div>
-      <div class="kpi-card accent-amber">
-        <div class="kpi-meta"><span class="kpi-label">COMMITTED THIS WEEK</span><span class="kpi-period">EST</span></div>
-        <div class="kpi-value">$1,250</div>
-        <div class="kpi-footer"><span class="kpi-sub">Paracord reorder $590 · Ads $660</span></div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">UPCOMING MONEY MOVEMENTS</div>
-      </div>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead><tr><th>DATE</th><th>ITEM</th><th class="num">AMOUNT</th><th>TYPE</th></tr></thead>
-          <tbody>
-            <tr><td class="mono">AUG 14</td><td>Amazon settlement payout</td><td class="num mono green">+$2,940</td><td><span class="status-pill green sm">IN</span></td></tr>
-            <tr><td class="mono">AUG 12</td><td>Paracord reorder — 200 units</td><td class="num mono red">-$590</td><td><span class="status-pill amber sm">OUT</span></td></tr>
-            <tr><td class="mono">AUG 11</td><td>Weekly ad budget</td><td class="num mono red">-$660</td><td><span class="status-pill amber sm">OUT</span></td></tr>
-            <tr><td class="mono">AUG 28</td><td>Amazon settlement payout (est)</td><td class="num mono green">+$3,100</td><td><span class="status-pill green sm">IN</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="brief-footnote mono">Estimates from order velocity and settlement cadence. Connects to the Finances API in production for exact figures.</div>
-    </div>
-  </div>
+  <div class="section-rule double"></div>
 
-  <!-- ── VIEW: ORDERS & FEEDBACK ── -->
-  <div class="view" id="view-customers">
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">RECENT ORDERS <span class="panel-sub">— live from SP-API when connected</span></div>
-      </div>
-      <div class="table-wrap">
-        <table class="data-table" id="ordersTable">
-          <thead><tr><th>ORDER</th><th>DATE</th><th class="num">ITEMS</th><th class="num">TOTAL</th><th>STATUS</th></tr></thead>
-          <tbody>
-            <tr><td class="mono">114-XXXXXXX-001</td><td class="mono">TODAY 09:12</td><td class="num mono">2</td><td class="num mono">$31.98</td><td><span class="status-pill green sm">SHIPPED</span></td></tr>
-            <tr><td class="mono">114-XXXXXXX-002</td><td class="mono">TODAY 08:40</td><td class="num mono">1</td><td class="num mono">$12.99</td><td><span class="status-pill amber sm">PENDING</span></td></tr>
-            <tr><td class="mono">114-XXXXXXX-003</td><td class="mono">YEST 22:15</td><td class="num mono">3</td><td class="num mono">$44.97</td><td><span class="status-pill green sm">SHIPPED</span></td></tr>
-          </tbody>
-        </table>
-      </div>
+  <!-- ══════════ EDITORIAL — the growth column ══════════ -->
+  <section class="editorial">
+    <h3 class="section-head">From the Editor <span class="section-sub">— one opinion, weekly</span></h3>
+    <div class="editorial-body">
+      <p><span class="dropcap">T</span>he measuring cups are the franchise. At 33.7% margin and a 98% hold on the Buy Box, the Set Pro would bear a fifty-cent price rise without flinching — worth roughly <b class="kept">$207 a week</b>. That is the cheapest money available to this business.</p>
+      <p>The paracord, by contrast, is demanding attention it has not earned: a lost Buy Box, a leaking margin, and a shelf running down. Deal with the hijacker first; the other two problems are only worth solving if the listing is yours again.</p>
+      <p>The category is growing 14% a year. The plan is not complicated: protect the cups, decide on the cord, and keep sixty days of stock between you and bad luck.</p>
     </div>
-    <div class="panel">
-      <div class="panel-header"><div class="panel-title">FEEDBACK PULSE</div></div>
-      <div class="view-placeholder compact">
-        <div class="vp-desc">Review monitoring and response drafting arrive here as the store grows — connected to customer messages and product reviews.</div>
-      </div>
-    </div>
-  </div>
+    <div class="editorial-sig">— The Ledger, published every Monday</div>
+  </section>
 
-  <!-- ── GROWTH VIEWS (staged for expansion) ── -->
-  <div class="view" id="view-ai-insights">
-    <div class="view-placeholder">
-      <div class="vp-label">AI INTELLIGENCE HUB</div>
-      <div class="vp-desc">AI-powered analysis across the business.<br>Income generation · Market research · Listing optimization · Data patterns · FBA logic</div>
-      <div class="vp-skills">
-        <span class="skill-tag">Income Generation</span>
-        <span class="skill-tag">Market Research</span>
-        <span class="skill-tag">Marketing Content</span>
-        <span class="skill-tag">Data Analysis</span>
-        <span class="skill-tag">Ecommerce FBA</span>
-      </div>
-      <div class="vp-note mono">Rendered dynamically at runtime</div>
+  <!-- ══════════ COLOPHON ══════════ -->
+  <footer class="colophon">
+    <div class="mast-rule-bottom"></div>
+    <div class="colophon-row mono">
+      <span>THE STOREFRONT LEDGER</span>
+      <span id="colophonStatus">Printed from demonstration figures</span>
+      <span id="colophonMeta">Region — · Marketplace —</span>
     </div>
-  </div>
-
-  <div class="view" id="view-pricing">
-    <div class="view-placeholder">
-      <div class="vp-label">PRICE OPTIMIZER</div>
-      <div class="vp-desc">AI pricing suggestions based on sales velocity, margin targets, and Buy Box data.</div>
-      <div class="vp-note mono">SP-API Catalog + Finances API</div>
-    </div>
-  </div>
-
-  <div class="view" id="view-opportunity">
-    <div class="view-placeholder">
-      <div class="vp-label">OPPORTUNITY SCANNER</div>
-      <div class="vp-desc">Detects underperforming products with growth potential using market signals and velocity analysis.</div>
-      <div class="vp-note mono">SP-API Sales + Catalog API · Phase 2</div>
-    </div>
-  </div>
-
-  <div class="view" id="view-profit"><div class="view-placeholder"><div class="vp-label">PROFITABILITY DRILL-DOWN</div><div class="vp-desc">Full product-level P&amp;L with WAC COGS method, fee breakdown, and margin trend lines.</div></div></div>
-  <div class="view" id="view-inventory"><div class="view-placeholder"><div class="vp-label">INVENTORY MANAGEMENT</div><div class="vp-desc">Real-time stock levels, 80-day threshold alerts, reorder engine, stranded inventory, sell-through rates.</div></div></div>
-  <div class="view" id="view-ads"><div class="view-placeholder"><div class="vp-label">ADVERTISING DASHBOARD <span style="color:var(--amber)">— COMING SOON</span></div><div class="vp-desc">ACoS, TACoS, ROAS, wasted spend, dayparting heatmap, bid suggestions.<br>Requires Amazon Advertising API approval (advertising.amazon.com → Tools → API).</div></div></div>
-  <div class="view" id="view-settings"><div class="view-placeholder"><div class="vp-label">SETTINGS</div><div class="vp-desc">API credentials, alert thresholds, margin targets, email configuration.</div></div></div>
+  </footer>
 
 </main>
-</div><!-- /layout -->
 
 <script src="app.js"></script>
 </body>
