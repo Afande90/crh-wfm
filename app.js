@@ -1,23 +1,19 @@
 /* ═══════════════════════════════════════════════════════
-   FBA STORE COMMAND — App Logic
+   THE STOREFRONT LEDGER — App Logic
    SP-API live data via /.netlify/functions/sp-api-data
 ═══════════════════════════════════════════════════════ */
 
 'use strict';
 
-// ─── STATE ───────────────────────────────────────────
-const state = {
-  activeView: 'overview',
-  activeRange: '7D',
-  data: null,
-  loading: false,
-};
+const state = { activeRange: '7D', loading: false };
 
-// ─── SP-API FETCH ────────────────────────────────────
+const RANGE_WORDS = { '7D': 'THIS WEEK', '30D': 'THIS MONTH', 'MTD': 'MONTH TO DATE' };
+
+// ─── FETCH ───────────────────────────────────────────
 async function fetchData(range) {
   if (state.loading) return;
   state.loading = true;
-  setSyncStatus('syncing');
+  setWire('syncing');
 
   try {
     const res  = await fetch(`/.netlify/functions/sp-api-data?range=${range}`);
@@ -26,222 +22,178 @@ async function fetchData(range) {
     if (json.meta) renderMeta(json.meta);
 
     if (!json.success) {
-      // Sandbox/credentials not returning data yet — keep the demo numbers
-      // on screen and show a neutral status instead of a hard error.
-      console.info('[FBA] live data unavailable:', json.error || 'no data');
-      setSyncStatus('demo');
+      // Credentials or sandbox not returning data — the paper still prints,
+      // clearly stamped as a proof copy.
+      console.info('[Ledger] live data unavailable:', json.error || 'no data');
+      setWire('demo');
       return;
     }
 
-    state.data = json;
-    renderDashboard(json);
-    setSyncStatus('live');
-
-    const syncEl = document.querySelector('.sync-time');
-    if (syncEl) syncEl.textContent = 'SYNC just now';
+    renderLive(json);
+    setWire('live');
   } catch (err) {
-    console.info('[FBA] running on demo data:', err.message);
-    setSyncStatus('demo');
+    console.info('[Ledger] printing from demonstration figures:', err.message);
+    setWire('demo');
   } finally {
     state.loading = false;
   }
 }
 
-// ─── RENDER ──────────────────────────────────────────
+// ─── HELPERS ─────────────────────────────────────────
 function fmt(n) {
   return new Intl.NumberFormat('en-US').format(Math.round(n || 0));
 }
+function money(n) { return `$${fmt(Math.abs(n))}`; }
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
 
+// ─── RENDER ──────────────────────────────────────────
 function renderMeta(meta) {
-  const mode = document.getElementById('modeBadge');
-  const market = document.getElementById('marketBadge');
-  if (mode) mode.textContent = meta.sandbox ? 'SANDBOX' : 'PRODUCTION';
-  if (market && meta.region) market.textContent = meta.region.toUpperCase();
+  setText('mastMode', meta.sandbox ? 'SANDBOX EDITION' : 'PRODUCTION EDITION');
+  setText('colophonMeta', `Region ${String(meta.region || '—').toUpperCase()} · Marketplace ${meta.marketplace || '—'}`);
 }
 
-function renderDashboard(d) {
-  const { kpis, inventory, orders } = d;
-  // Only overwrite the dashboard if the API actually returned sales data.
-  // An empty sandbox response (revenue 0) would otherwise blank out the demo.
-  if (kpis && kpis.revenue > 0) {
-    updateKPICards(kpis);
-    updateTicker(kpis);
-    updateWaterfall(kpis);
+function renderLive(d) {
+  const k = d.kpis;
+  // An empty sandbox answer (revenue 0) keeps the demonstration figures —
+  // never print a blank front page.
+  if (k && k.revenue > 0) {
+    const profit = k.netProfit;
+    const lead = document.getElementById('leadProfit');
+    if (lead) {
+      lead.textContent = (profit < 0 ? '−' : '') + money(profit);
+      lead.classList.toggle('loss', profit < 0);
+    }
+    setText('leadPeriod', RANGE_WORDS[state.activeRange] || state.activeRange);
+    setText('leadHeadline',
+      profit >= 0
+        ? `Your store kept ${money(profit)} after every cost — a ${k.margin}% margin on ${fmt(k.units)} units sold.`
+        : `The store ran at a loss of ${money(profit)} this period — costs outran ${money(k.revenue)} in takings.`);
+    setText('leadDeck',
+      `Gross takings of ${money(k.revenue)}, less goods (${money(k.cogs)}), fulfilment & fees (${money(k.fbaFees)}), and advertising (${money(k.adSpend)}). Figures live from Amazon.`);
+
+    setText('statRevenue', money(k.revenue));
+    setText('statUnits', fmt(k.units));
+    setText('statMargin', `${k.margin}%`);
+
+    updateLedger(k);
   }
-  if (inventory?.length) updateInventory(inventory);
-  if (orders?.length) updateOrders(orders);
-  updateAlertBadge();
+
+  if (d.inventory?.length) updateShelf(d.inventory);
+  if (d.orders?.length) updateWire(d.orders);
 }
 
-function updateKPICards(kpis) {
-  // Card order in HTML: profit, revenue, margin, units, fbaFees
-  const values = [
-    `$${fmt(kpis.netProfit)}`,
-    `$${fmt(kpis.revenue)}`,
-    `${kpis.margin}%`,
-    fmt(kpis.units),
-    `$${fmt(kpis.fbaFees)}`,
-  ];
-  document.querySelectorAll('#view-overview .kpi-card .kpi-value').forEach((el, i) => {
-    if (values[i] !== undefined) el.textContent = values[i];
+function updateLedger(k) {
+  const rows = {
+    revenue:  { val: k.revenue,  sign: '' },
+    cogs:     { val: k.cogs,     sign: '−' },
+    fbaFees:  { val: k.fbaFees,  sign: '−' },
+    adSpend:  { val: k.adSpend,  sign: '−' },
+    netProfit:{ val: k.netProfit, sign: k.netProfit < 0 ? '−' : '' },
+  };
+  document.querySelectorAll('[data-ledger]').forEach(el => {
+    const r = rows[el.dataset.ledger];
+    if (r) el.textContent = `${r.sign}${money(r.val)}`;
   });
-  document.querySelectorAll('#view-overview .kpi-card .kpi-period').forEach(el => {
-    el.textContent = state.activeRange;
+  const max = Math.max(k.revenue, 1);
+  const widths = { revenue: k.revenue, cogs: k.cogs, fbaFees: k.fbaFees, adSpend: k.adSpend, netProfit: Math.max(k.netProfit, 0) };
+  document.querySelectorAll('#ledgerTable tr').forEach(tr => {
+    const key = tr.querySelector('[data-ledger]')?.dataset.ledger;
+    const bar = tr.querySelector('.bar');
+    if (key && bar && widths[key] !== undefined) {
+      bar.style.width = `${Math.min(100, Math.round((widths[key] / max) * 100))}%`;
+    }
   });
+  const m = document.getElementById('ledgerMargin');
+  if (m) m.textContent = `${k.margin}%`;
 }
 
-function updateTicker(kpis) {
-  const items = document.querySelectorAll('.ticker-item');
-  const ticks = [
-    { label: `NET PROFIT (${state.activeRange})`, val: `$${fmt(kpis.netProfit)}`, dir: kpis.netProfit >= 0 ? 'up' : 'dn' },
-    { label: 'REVENUE',    val: `$${fmt(kpis.revenue)}`,  dir: 'up' },
-    { label: 'AVG MARGIN', val: `${kpis.margin}%`,         dir: kpis.margin >= 20 ? 'up' : 'dn' },
-    { label: 'UNITS SOLD', val: fmt(kpis.units),            dir: 'up' },
-    { label: 'FBA FEES',   val: `$${fmt(kpis.fbaFees)}`,   dir: 'dn' },
-  ];
-  items.forEach((el, i) => {
-    if (!ticks[i]) return;
-    const t = ticks[i];
-    el.className = `ticker-item tick-${t.dir}`;
-    el.innerHTML = `${t.label} <b>${t.val}</b>`;
-  });
-}
-
-function updateWaterfall(kpis) {
-  document.querySelectorAll('.wf-row').forEach(row => {
-    const label = row.querySelector('.wf-label')?.textContent?.trim();
-    const valEl = row.querySelector('.wf-val');
-    if (!valEl) return;
-    if (label === 'GROSS REVENUE') valEl.textContent = `$${fmt(kpis.revenue)}`;
-    if (label === 'COGS (WAC)')    valEl.textContent = `-$${fmt(kpis.cogs)}`;
-    if (label === 'FBA FEES')      valEl.textContent = `-$${fmt(kpis.fbaFees)}`;
-    if (label === 'AD SPEND')      valEl.textContent = `-$${fmt(kpis.adSpend)}`;
-    if (label === 'NET PROFIT')    valEl.textContent = `$${fmt(kpis.netProfit)}`;
-  });
-  const marginEl = document.querySelector('.wf-margin');
-  if (marginEl && kpis.margin !== undefined) {
-    marginEl.innerHTML = `MARGIN <b class="green">${kpis.margin}%</b>`;
-  }
-}
-
-function updateInventory(summaries) {
-  const list = document.querySelector('.inv-list');
+function updateShelf(summaries) {
+  const list = document.getElementById('shelfList');
   if (!list) return;
 
-  const html = summaries.slice(0, 5).map(item => {
-    const qty   = item.totalQuantity || 0;
-    const days  = Math.round(qty / 5); // placeholder daily velocity
-    const pct   = Math.min(100, Math.round((days / 120) * 100));
-    const color = days > 80 ? 'green' : days > 40 ? 'amber' : 'red';
-    const badge = days > 80 ? 'OK' : days > 40 ? 'REORDER' : 'CRITICAL';
-    const name  = item.productName || item.sellerSku || item.asin;
+  const html = summaries.slice(0, 6).map(item => {
+    const qty  = item.totalQuantity || 0;
+    const days = Math.round(qty / 5); // placeholder daily velocity
+    const pct  = Math.min(100, Math.round((days / 120) * 100));
+    const cls  = days > 80 ? 'ok' : days > 40 ? 'low' : 'crit';
+    const name = item.productName || item.sellerSku || item.asin || 'Unnamed product';
 
-    return `<div class="inv-row${color !== 'green' ? ' flagged' : ''}">
-  <div class="inv-info">
-    <span class="inv-name">${name}</span>
-    <span class="inv-sku mono">${item.asin}</span>
-  </div>
-  <div class="inv-bar-wrap"><div class="inv-bar ${color}" style="width:${pct}%"></div></div>
-  <span class="inv-days mono ${color}">${days}d</span>
-  <span class="status-pill ${color} sm">${badge}</span>
+    return `<div class="shelf-row${cls !== 'ok' ? ' low' : ''}">
+  <div class="shelf-name">${name} <span class="shelf-sku mono">${item.asin || ''}</span></div>
+  <div class="shelf-track"><span class="shelf-fill ${cls}" style="width:${pct}%"></span></div>
+  <div class="shelf-days mono">${days}<span class="d">d</span></div>
 </div>`;
   }).join('');
 
   if (html) list.innerHTML = html;
 }
 
-function updateOrders(orders) {
-  const tbody = document.querySelector('#ordersTable tbody');
+function updateWire(orders) {
+  const tbody = document.getElementById('ordersBody');
   if (!tbody) return;
 
-  const html = orders.slice(0, 10).map(o => {
+  const html = orders.slice(0, 8).map(o => {
     const total  = o.OrderTotal?.Amount ? `$${o.OrderTotal.Amount}` : '—';
     const items  = (o.NumberOfItemsShipped || 0) + (o.NumberOfItemsUnshipped || 0);
-    const status = o.OrderStatus || 'PENDING';
-    const color  = status === 'Shipped' ? 'green' : 'amber';
-    const date   = o.PurchaseDate ? new Date(o.PurchaseDate).toLocaleDateString() : '—';
+    const status = o.OrderStatus || 'Pending';
+    const cls    = status === 'Shipped' ? 'ok' : 'wait';
+    const date   = o.PurchaseDate
+      ? new Date(o.PurchaseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : '—';
 
     return `<tr>
   <td class="mono">${o.AmazonOrderId || '—'}</td>
-  <td class="mono">${date}</td>
+  <td>${date}</td>
   <td class="num mono">${items}</td>
   <td class="num mono">${total}</td>
-  <td><span class="status-pill ${color} sm">${status.toUpperCase()}</span></td>
+  <td><span class="tag ${cls}">${status}</span></td>
 </tr>`;
   }).join('');
 
   if (html) tbody.innerHTML = html;
 }
 
-// ─── STATUS HELPERS ──────────────────────────────────
-function setSyncStatus(status) {
-  const live   = document.querySelector('.live-badge');
-  const apiRow = [...document.querySelectorAll('.status-row')]
-    .find(r => r.querySelector('.sd')?.textContent === 'API');
-  const sv = apiRow?.querySelector('.sv');
+// ─── WIRE STATUS (the stamp) ─────────────────────────
+function setWire(status) {
+  const stamp = document.getElementById('wireStamp');
+  const colophon = document.getElementById('colophonStatus');
+  if (!stamp) return;
 
+  stamp.classList.remove('demo', 'error');
   if (status === 'live') {
-    if (live) live.innerHTML = '<span class="live-dot"></span>LIVE';
-    if (sv) { sv.textContent = 'CONNECTED'; sv.className = 'sv ok'; }
+    stamp.textContent = 'WIRE · LIVE FROM AMAZON';
+    if (colophon) colophon.textContent = 'Printed from live figures';
   } else if (status === 'syncing') {
-    if (live) live.innerHTML = '<span class="live-dot" style="background:var(--amber)"></span>SYNCING';
-    if (sv) { sv.textContent = 'SYNCING'; sv.className = 'sv'; }
+    stamp.textContent = 'WIRE · RECEIVING…';
   } else if (status === 'demo') {
-    if (live) live.innerHTML = '<span class="live-dot" style="background:var(--amber)"></span>DEMO';
-    if (sv) { sv.textContent = 'DEMO DATA'; sv.className = 'sv'; }
+    stamp.textContent = 'PRESS PROOF · DEMO FIGURES';
+    stamp.classList.add('demo');
+    if (colophon) colophon.textContent = 'Printed from demonstration figures';
   } else {
-    if (live) live.innerHTML = '<span class="live-dot" style="background:var(--red)"></span>ERROR';
-    if (sv) { sv.textContent = 'ERROR'; sv.className = 'sv'; }
+    stamp.textContent = 'WIRE · DOWN';
+    stamp.classList.add('error');
   }
 }
 
-// ─── VIEW ROUTER ─────────────────────────────────────
-function showView(viewId) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  const target = document.getElementById(`view-${viewId}`);
-  if (target) target.classList.add('active');
-
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.remove('active');
-    if (item.getAttribute('onclick')?.includes(`'${viewId}'`)) item.classList.add('active');
-  });
-
-  state.activeView = viewId;
-}
-
-// ─── RANGE SELECTOR ──────────────────────────────────
+// ─── EDITIONS (range) ────────────────────────────────
 function setRange(btn, range) {
-  document.querySelectorAll('.rtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.edition').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   state.activeRange = range;
+  setText('leadPeriod', RANGE_WORDS[range] || range);
   fetchData(range);
 }
 
-// ─── ALERT BADGE ─────────────────────────────────────
-function updateAlertBadge() {
-  const badge = document.getElementById('alertBadge');
-  if (badge) badge.textContent = '3 ACTIONS';
-}
-
-// ─── INIT ─────────────────────────────────────────────
+// ─── INIT ────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  updateAlertBadge();
-
-  const briefDate = document.getElementById('briefDate');
-  if (briefDate) {
-    const now = new Date();
-    briefDate.textContent = `Week of ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-  }
-
-  const aiBtn = document.querySelector('.ai-refresh-btn');
-  if (aiBtn) {
-    aiBtn.addEventListener('click', () => {
-      aiBtn.textContent = 'GENERATING...';
-      aiBtn.disabled = true;
-      setTimeout(() => { aiBtn.textContent = 'REFRESH NOW'; aiBtn.disabled = false; }, 2000);
-    });
-  }
+  const now = new Date();
+  setText('mastDate', now.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  }));
 
   fetchData(state.activeRange);
-  console.log('[FBA Store Command] initialized');
+  console.log('[The Storefront Ledger] first edition printed');
 });
