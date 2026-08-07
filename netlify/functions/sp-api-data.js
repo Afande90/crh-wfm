@@ -135,6 +135,17 @@ exports.handler = async (event) => {
       0
     );
 
+    // Real per-day revenue/orders across ALL fetched orders, for the charts
+    const byDay = {};
+    orders.forEach(o => {
+      const day = (o.PurchaseDate || '').slice(0, 10);
+      if (!day) return;
+      byDay[day] = byDay[day] || { date: day, revenue: 0, orders: 0 };
+      byDay[day].revenue += parseFloat(o.OrderTotal?.Amount || 0);
+      byDay[day].orders += 1;
+    });
+    const daily = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date));
+
     // Fee/COGS estimates until the Finances API is wired in production
     const fbaFees = revenue * 0.11;
     const cogs = revenue * 0.4;
@@ -166,6 +177,8 @@ exports.handler = async (event) => {
           adSpend: Math.round(adSpend),
         },
         orders: orders.slice(0, 10),
+        totalOrders: orders.length,
+        daily,
         inventory,
         syncedAt: new Date().toISOString(),
       }),

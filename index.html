@@ -17,12 +17,11 @@
     <h1 class="gate-title">The Storefront Ledger</h1>
     <p class="gate-sub mono">PRIVATE CIRCULATION · SIGN THE BOOK TO ENTER</p>
 
-    <!-- First run: set the Proprietor's passcode -->
     <form class="gate-form" id="gateSetup" hidden onsubmit="return gateCreate(event)">
       <p class="gate-note">The book has no keeper yet. Set the Proprietor's passcode to open the house.</p>
       <div class="field">
         <label class="field-label" for="setupName">Your name</label>
-        <input class="field-input" type="text" id="setupName" placeholder="e.g. Abdall Hassan" autocomplete="name">
+        <input class="field-input" type="text" id="setupName" autocomplete="name">
       </div>
       <div class="field">
         <label class="field-label" for="setupPass">Choose a passcode</label>
@@ -32,7 +31,6 @@
       <p class="settings-status mono" id="setupStatus"></p>
     </form>
 
-    <!-- Normal entry -->
     <form class="gate-form" id="gateLogin" hidden onsubmit="return gateEnter(event)">
       <div class="field">
         <label class="field-label" for="loginName">Name or email</label>
@@ -46,7 +44,7 @@
       <p class="settings-status mono" id="loginStatus"></p>
     </form>
 
-    <p class="gate-foot mono">Kept in this browser until the house backend is connected.</p>
+    <p class="gate-foot mono">Accounts kept on the house backend.</p>
   </div>
 </div>
 
@@ -69,17 +67,16 @@
     <span class="mast-dot">·</span>
     <span>Midnight Edition</span>
     <span class="mast-dot">·</span>
-    <span id="mastMode" class="mono">SANDBOX</span>
+    <span id="mastMode" class="mono">—</span>
     <span class="mast-dot">·</span>
     <span id="mastReader" class="mono">—</span>
     <button class="signout" onclick="gateSignOut()">SIGN OUT</button>
   </div>
 
-  <!-- ── TABS ── -->
   <nav class="tabs">
     <button class="tab active" data-tab="board" onclick="showTab(this)">The Board</button>
     <button class="tab" data-tab="front" onclick="showTab(this)">Front Page</button>
-    <button class="tab" data-tab="dispatches" onclick="showTab(this)">Dispatches <span class="tab-count">3</span></button>
+    <button class="tab" data-tab="dispatches" onclick="showTab(this)">Dispatches <span class="tab-count" id="dispatchCount" hidden>0</span></button>
     <button class="tab" data-tab="books" onclick="showTab(this)">The Books</button>
     <button class="tab" data-tab="shelf" onclick="showTab(this)">Shelf &amp; Orders</button>
     <button class="tab" data-tab="editor" onclick="showTab(this)">From the Editor</button>
@@ -90,33 +87,33 @@
 
 <main class="paper">
 
-  <!-- ══════════ TAB: THE BOARD — the whole operation on one wall ══════════ -->
+  <!-- ══════════ THE BOARD ══════════ -->
   <section class="panel active" id="tab-board">
     <div class="board-verdict">
-      <div class="verdict-stamp" id="verdictStamp">IN GOOD ORDER</div>
-      <p class="verdict-line" id="verdictLine">The house is profitable, the wire is up, and three matters await your signature.</p>
+      <div class="verdict-stamp" id="verdictStamp">READING THE WIRE…</div>
+      <p class="verdict-line" id="verdictLine">Waiting for the first figures from Amazon.</p>
     </div>
     <div class="board-grid">
       <button class="board-tile hero" onclick="showTabByName('front')">
         <div class="bt-label">The Till</div>
-        <div class="bt-value mono kept" id="boardProfit">$1,847</div>
-        <div class="bt-note" id="boardProfitNote">kept this week · margin 29.7%</div>
+        <div class="bt-value mono kept" id="boardProfit">—</div>
+        <div class="bt-note" id="boardProfitNote">net profit this period</div>
         <div class="bt-spark" id="boardSpark"></div>
       </button>
       <button class="board-tile" onclick="showTabByName('dispatches')">
         <div class="bt-label">Awaiting Signature</div>
-        <div class="bt-value mono spent" id="boardActions">3</div>
-        <div class="bt-note">1 urgent — the Buy Box</div>
+        <div class="bt-value mono" id="boardActions">—</div>
+        <div class="bt-note" id="boardActionsNote">matters to attend to</div>
       </button>
       <button class="board-tile" onclick="showTabByName('books')">
-        <div class="bt-label">Cash Position</div>
-        <div class="bt-value mono" id="boardCash">$4,790</div>
-        <div class="bt-note">after commitments, next 30 days</div>
+        <div class="bt-label">Revenue</div>
+        <div class="bt-value mono" id="boardRevenue">—</div>
+        <div class="bt-note" id="boardRevenueNote">gross takings this period</div>
       </button>
       <button class="board-tile" onclick="showTabByName('shelf')">
         <div class="bt-label">The Shelf</div>
-        <div class="bt-value mono watch" id="boardShelf">1 low</div>
-        <div class="bt-note" id="boardShelfNote">Paracord — 56 days remain</div>
+        <div class="bt-value mono" id="boardShelf">—</div>
+        <div class="bt-note" id="boardShelfNote">stock lines reported</div>
       </button>
       <button class="board-tile" onclick="showTabByName('shelf')">
         <div class="bt-label">The Wire</div>
@@ -128,230 +125,130 @@
         <div class="bt-value mono" id="boardEditor">—</div>
         <div class="bt-note">this period's column</div>
       </button>
-      <button class="board-tile" onclick="showTabByName('admin')">
-        <div class="bt-label">The Staff</div>
-        <div class="bt-value mono" id="boardStaff">1</div>
-        <div class="bt-note" id="boardStaffNote">registered in the house</div>
+      <button class="board-tile" onclick="showTabByName('shelf')">
+        <div class="bt-label">Orders</div>
+        <div class="bt-value mono" id="boardOrders">—</div>
+        <div class="bt-note" id="boardOrdersNote">in this period</div>
       </button>
       <button class="board-tile" onclick="showTabByName('front')">
-        <div class="bt-label">Next Payout</div>
-        <div class="bt-value mono kept" id="boardPayout">$2,940</div>
-        <div class="bt-note">estimated Aug 14</div>
+        <div class="bt-label">Units Sold</div>
+        <div class="bt-value mono" id="boardUnits">—</div>
+        <div class="bt-note">this period</div>
       </button>
     </div>
   </section>
 
-  <!-- ══════════ TAB: FRONT PAGE ══════════ -->
+  <!-- ══════════ FRONT PAGE ══════════ -->
   <section class="panel" id="tab-front">
     <div class="lead">
       <div class="lead-left">
         <div class="kicker">THE BOTTOM LINE — <span id="leadPeriod">THIS WEEK</span></div>
-        <div class="lead-figure" id="leadProfit">$1,847</div>
-        <h2 class="lead-headline" id="leadHeadline">
-          Your store earned a healthy profit this week, up 12.4% — the measuring cups carried the paper.
-        </h2>
-        <p class="lead-deck" id="leadDeck">
-          Net of every cost — goods, Amazon's cut, fulfilment, and advertising — this is what actually
-          stayed in the till. Best day: Monday. Slowest: Saturday.
-        </p>
+        <div class="lead-figure" id="leadProfit">—</div>
+        <h2 class="lead-headline" id="leadHeadline">Waiting for the first figures from Amazon.</h2>
+        <p class="lead-deck" id="leadDeck">Net profit is drawn from live orders less goods, Amazon's fees, and advertising. Nothing on this page is invented — if the wire is quiet, it says so.</p>
       </div>
       <div class="lead-right">
         <div class="stat-stack">
           <div class="stat">
             <span class="stat-label">Revenue</span>
-            <span class="stat-value mono" id="statRevenue">$6,210</span>
-            <span class="stat-note up" id="statRevenueNote">▲ 8.1%</span>
+            <span class="stat-value mono" id="statRevenue">—</span>
+            <span class="stat-note" id="statRevenueNote"></span>
           </div>
           <div class="stat">
             <span class="stat-label">Units sold</span>
-            <span class="stat-value mono" id="statUnits">831</span>
-            <span class="stat-note up" id="statUnitsNote">▲ 5.6%</span>
+            <span class="stat-value mono" id="statUnits">—</span>
+            <span class="stat-note" id="statUnitsNote"></span>
           </div>
           <div class="stat">
             <span class="stat-label">Margin kept</span>
-            <span class="stat-value mono" id="statMargin">29.7%</span>
-            <span class="stat-note dn" id="statMarginNote">▼ 1.2 pts</span>
+            <span class="stat-value mono" id="statMargin">—</span>
+            <span class="stat-note" id="statMarginNote"></span>
           </div>
           <div class="stat">
-            <span class="stat-label">Next payout</span>
-            <span class="stat-value mono" id="statPayout">$2,940</span>
-            <span class="stat-note" id="statPayoutNote">est. 7 days</span>
+            <span class="stat-label">Orders</span>
+            <span class="stat-value mono" id="statOrders">—</span>
+            <span class="stat-note" id="statOrdersNote"></span>
           </div>
         </div>
-        <div class="front-note">
-          <span class="front-note-label">TODAY'S PRIORITY</span>
-          <p>The Buy Box on the Paracord Bundle is lost to an underbidder — see <a class="jump" onclick="showTabByName('dispatches')">Dispatches</a> for the full notice.</p>
-        </div>
       </div>
     </div>
 
     <div class="section-rule"></div>
-
-    <h3 class="section-head">The Week, Drawn <span class="section-sub">— profit by day, pictured</span></h3>
+    <h3 class="section-head">The Week, Drawn <span class="section-sub">— profit by day, from live orders</span></h3>
     <div class="chart-duo">
       <div class="chart-block">
-        <div class="chart-title mono">PROFIT TREND · 14 DAYS</div>
-        <div class="chart-box" id="chartTrend"></div>
+        <div class="chart-title mono">PROFIT TREND</div>
+        <div class="chart-box" id="chartTrend"><p class="chart-empty">No figures on the wire yet.</p></div>
       </div>
       <div class="chart-block">
-        <div class="chart-title mono">DAILY TAKINGS · THIS WEEK</div>
-        <div class="chart-box" id="chartDaily"></div>
+        <div class="chart-title mono">DAILY TAKINGS</div>
+        <div class="chart-box" id="chartDaily"><p class="chart-empty">No figures on the wire yet.</p></div>
       </div>
     </div>
   </section>
 
-  <!-- ══════════ TAB: DISPATCHES ══════════ -->
+  <!-- ══════════ DISPATCHES ══════════ -->
   <section class="panel" id="tab-dispatches">
-    <h3 class="section-head">Dispatches <span class="section-sub">— matters requiring the proprietor's attention</span></h3>
+    <h3 class="section-head">Dispatches <span class="section-sub">— matters raised by the live figures</span></h3>
     <div class="dispatch-row" id="dispatchRow">
-      <article class="dispatch urgent">
-        <div class="dispatch-stamp">ACT TODAY</div>
-        <h4 class="dispatch-title">The Buy Box has been taken.</h4>
-        <p class="dispatch-body">An unknown seller is undercutting the Paracord Bundle at $6.89. Until reclaimed, every sale on that listing is theirs, not yours.</p>
-        <div class="dispatch-do">→ Verify the hijacker through Brand Registry</div>
-      </article>
-      <article class="dispatch">
-        <div class="dispatch-stamp week">THIS WEEK</div>
-        <h4 class="dispatch-title">Paracord margin slips below the floor.</h4>
-        <p class="dispatch-body">19.4% against your 20% rule. Thin margins compound quietly — a small correction now beats a painful one later.</p>
-        <div class="dispatch-do">→ Raise price $0.30, or renegotiate cost</div>
-      </article>
-      <article class="dispatch">
-        <div class="dispatch-stamp week">THIS WEEK</div>
-        <h4 class="dispatch-title">The shelf runs bare in 56 days.</h4>
-        <p class="dispatch-body">Paracord stock at current pace clears in under two months, and restock takes six weeks. The window to reorder is now.</p>
-        <div class="dispatch-do">→ Order 200 units within 14 days</div>
-      </article>
+      <p class="empty-note">Reading the wire…</p>
     </div>
   </section>
 
-  <!-- ══════════ TAB: THE BOOKS ══════════ -->
+  <!-- ══════════ THE BOOKS ══════════ -->
   <section class="panel" id="tab-books">
     <h3 class="section-head">Every Dollar, Divided <span class="section-sub">— what one dollar of sales becomes</span></h3>
-    <div class="dollar-split" id="dollarSplit"></div>
+    <div class="dollar-split" id="dollarSplit"><p class="empty-note">Awaiting live sales.</p></div>
 
     <div class="section-rule"></div>
-
-    <h3 class="section-head">The Week's Ledger <span class="section-sub">— where every dollar went</span></h3>
+    <h3 class="section-head">The Ledger <span class="section-sub">— where every dollar went</span></h3>
     <table class="ledger" id="ledgerTable">
       <tbody>
-        <tr>
-          <td class="l-item">Gross takings</td>
-          <td class="l-bar"><span class="bar in" style="width:100%"></span></td>
-          <td class="l-amt mono" data-ledger="revenue">$6,210</td>
-        </tr>
-        <tr>
-          <td class="l-item">Cost of goods</td>
-          <td class="l-bar"><span class="bar out" style="width:40%"></span></td>
-          <td class="l-amt mono neg" data-ledger="cogs">−$2,484</td>
-        </tr>
-        <tr>
-          <td class="l-item">Fulfilment &amp; fees</td>
-          <td class="l-bar"><span class="bar out" style="width:18%"></span></td>
-          <td class="l-amt mono neg" data-ledger="fbaFees">−$1,117</td>
-        </tr>
-        <tr>
-          <td class="l-item">Advertising</td>
-          <td class="l-bar"><span class="bar out" style="width:12%"></span></td>
-          <td class="l-amt mono neg" data-ledger="adSpend">−$762</td>
-        </tr>
-        <tr class="l-total">
-          <td class="l-item">Kept in the till</td>
-          <td class="l-bar"><span class="bar kept" style="width:30%"></span></td>
-          <td class="l-amt mono kept" data-ledger="netProfit">$1,847</td>
-        </tr>
+        <tr><td class="l-item">Gross takings</td><td class="l-bar"><span class="bar in" style="width:0%"></span></td><td class="l-amt mono" data-ledger="revenue">—</td></tr>
+        <tr><td class="l-item">Cost of goods <span class="est">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="cogs">—</td></tr>
+        <tr><td class="l-item">Fulfilment &amp; fees <span class="est">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="fbaFees">—</td></tr>
+        <tr><td class="l-item">Advertising <span class="est">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="adSpend">—</td></tr>
+        <tr class="l-total"><td class="l-item">Kept in the till</td><td class="l-bar"><span class="bar kept" style="width:0%"></span></td><td class="l-amt mono kept" data-ledger="netProfit">—</td></tr>
       </tbody>
     </table>
-    <p class="footnote">Margin of <b id="ledgerMargin">29.7%</b> on the period. Cost of goods estimated by weighted average until the Finances API is connected in production.</p>
-
-    <div class="section-rule"></div>
-
-    <h3 class="section-head">The Forecast <span class="section-sub">— money in, money out, next 30 days</span></h3>
-    <div class="forecast-row">
-      <div class="forecast-card">
-        <div class="fc-label">Coming in</div>
-        <div class="fc-value mono kept">+$6,040</div>
-        <div class="fc-note">Two settlements: Aug 14 (~$2,940) and Aug 28 (~$3,100)</div>
-      </div>
-      <div class="forecast-card">
-        <div class="fc-label">Going out</div>
-        <div class="fc-value mono neg">−$1,250</div>
-        <div class="fc-note">Paracord reorder $590 · advertising $660</div>
-      </div>
-      <div class="forecast-card">
-        <div class="fc-label">Room to move</div>
-        <div class="fc-value mono">$4,790</div>
-        <div class="fc-note">Enough to reorder and still fund one growth bet</div>
-      </div>
-    </div>
+    <p class="footnote">Revenue, units, and orders are live from Amazon. Lines marked <span class="est">est.</span> are modelled from revenue until the Finances API is connected, at which point they become exact.</p>
   </section>
 
-  <!-- ══════════ TAB: SHELF & ORDERS ══════════ -->
+  <!-- ══════════ SHELF & ORDERS ══════════ -->
   <section class="panel" id="tab-shelf">
-    <h3 class="section-head">The Shelf <span class="section-sub">— days of stock remaining</span></h3>
-    <div class="shelf" id="shelfList">
-      <div class="shelf-row">
-        <div class="shelf-name">Measuring Cup Set Pro <span class="shelf-sku mono">B08XXXX1234</span></div>
-        <div class="shelf-track"><span class="shelf-fill ok" style="width:85%"></span></div>
-        <div class="shelf-days mono">102<span class="d">d</span></div>
-      </div>
-      <div class="shelf-row">
-        <div class="shelf-name">Measuring Cup 5-Piece <span class="shelf-sku mono">B08XXXX5678</span></div>
-        <div class="shelf-track"><span class="shelf-fill ok" style="width:72%"></span></div>
-        <div class="shelf-days mono">87<span class="d">d</span></div>
-      </div>
-      <div class="shelf-row low">
-        <div class="shelf-name">Paracord Bundle 100m <span class="shelf-sku mono">B09XXXX9012</span></div>
-        <div class="shelf-track"><span class="shelf-fill low" style="width:38%"></span></div>
-        <div class="shelf-days mono">56<span class="d">d</span></div>
-      </div>
-    </div>
-    <p class="footnote">The house rule: reorder at 80 days. One line item is past due — see Dispatches.</p>
+    <h3 class="section-head">The Shelf <span class="section-sub">— stock reported by Amazon</span></h3>
+    <div class="shelf" id="shelfList"><p class="empty-note">No inventory reported on the wire.</p></div>
 
     <div class="section-rule"></div>
-
-    <h3 class="section-head">The Order Wire <span class="section-sub">— latest sales, straight from Amazon</span></h3>
+    <h3 class="section-head">The Order Wire <span class="section-sub">— live orders from Amazon</span></h3>
     <table class="wire-table">
-      <thead>
-        <tr><th>Order</th><th>Placed</th><th class="num">Items</th><th class="num">Value</th><th>Standing</th></tr>
-      </thead>
+      <thead><tr><th>Order</th><th>Placed</th><th class="num">Items</th><th class="num">Value</th><th>Standing</th></tr></thead>
       <tbody id="ordersBody">
-        <tr><td class="mono">114-XXXXXXX-8801</td><td>Today, 09:12</td><td class="num mono">2</td><td class="num mono">$31.98</td><td><span class="tag ok">Shipped</span></td></tr>
-        <tr><td class="mono">114-XXXXXXX-8802</td><td>Today, 08:40</td><td class="num mono">1</td><td class="num mono">$12.99</td><td><span class="tag wait">Pending</span></td></tr>
-        <tr><td class="mono">114-XXXXXXX-8803</td><td>Yesterday, 22:15</td><td class="num mono">3</td><td class="num mono">$44.97</td><td><span class="tag ok">Shipped</span></td></tr>
+        <tr><td colspan="5" class="empty-cell">No orders on the wire for this period.</td></tr>
       </tbody>
     </table>
   </section>
 
-  <!-- ══════════ TAB: FROM THE EDITOR ══════════ -->
+  <!-- ══════════ FROM THE EDITOR ══════════ -->
   <section class="panel" id="tab-editor">
-    <h3 class="section-head">From the Editor <span class="section-sub">— one opinion, written by AI from your figures</span></h3>
+    <h3 class="section-head">From the Editor <span class="section-sub">— written by AI from your live figures</span></h3>
     <div class="editorial">
       <div class="editorial-body">
-        <p><span class="dropcap">T</span>he measuring cups are the franchise. At 33.7% margin and a 98% hold on the Buy Box, the Set Pro would bear a fifty-cent price rise without flinching — worth roughly <b class="kept">$207 a week</b>. That is the cheapest money available to this business.</p>
-        <p>The paracord, by contrast, is demanding attention it has not earned: a lost Buy Box, a leaking margin, and a shelf running down. Deal with the hijacker first; the other two problems are only worth solving if the listing is yours again.</p>
-        <p>The category is growing 14% a year. The plan is not complicated: protect the cups, decide on the cord, and keep sixty days of stock between you and bad luck.</p>
+        <p class="empty-note">The editor writes once the wire brings figures. Ask again below at any time.</p>
       </div>
-      <div class="editorial-sig">— The Ledger, published every Monday</div>
-      <button class="rewrite-btn" id="rewriteBtn" onclick="refreshEditorial()">↻ Ask the editor to write again</button>
+      <div class="editorial-sig">—</div>
+      <button class="rewrite-btn" id="rewriteBtn" onclick="refreshEditorial()">↻ Ask the editor to write</button>
     </div>
   </section>
 
-  <!-- ══════════ TAB: ADMINISTRATION — the staff registry ══════════ -->
+  <!-- ══════════ ADMINISTRATION ══════════ -->
   <section class="panel" id="tab-admin">
-    <h3 class="section-head">The Staff Registry <span class="section-sub">— who may open the ledger, and with what authority</span></h3>
-
+    <h3 class="section-head">The Staff Registry <span class="section-sub">— who may open the ledger</span></h3>
     <div class="registry-grid">
       <div class="registry-form">
         <h4 class="settings-title">Enter a new name in the book</h4>
-        <div class="field">
-          <label class="field-label" for="staffName">Full name</label>
-          <input class="field-input" type="text" id="staffName" placeholder="e.g. Abdall Hassan" autocomplete="off">
-        </div>
-        <div class="field">
-          <label class="field-label" for="staffEmail">Email</label>
-          <input class="field-input mono" type="email" id="staffEmail" placeholder="name@example.com" autocomplete="off">
-        </div>
+        <div class="field"><label class="field-label" for="staffName">Full name</label><input class="field-input" type="text" id="staffName" autocomplete="off"></div>
+        <div class="field"><label class="field-label" for="staffEmail">Email</label><input class="field-input mono" type="email" id="staffEmail" autocomplete="off"></div>
         <div class="field">
           <label class="field-label" for="staffRole">Authority</label>
           <select class="field-input" id="staffRole">
@@ -361,71 +258,40 @@
             <option value="Reader">Reader — may look, may not touch</option>
           </select>
         </div>
-        <div class="field">
-          <label class="field-label" for="staffPass">Passcode <span class="field-hint">(they sign in with this)</span></label>
-          <input class="field-input mono" type="password" id="staffPass" placeholder="••••••••" autocomplete="new-password">
-        </div>
-        <div class="settings-actions">
-          <button class="btn-save" onclick="addStaff()">Enter in the registry</button>
-        </div>
+        <div class="field"><label class="field-label" for="staffPass">Passcode <span class="field-hint">(they sign in with this)</span></label><input class="field-input mono" type="password" id="staffPass" autocomplete="new-password"></div>
+        <div class="settings-actions"><button class="btn-save" onclick="addStaff()">Enter in the registry</button></div>
         <p class="settings-status mono" id="staffStatus"></p>
-        <p class="footnote">The registry is kept in this browser for now. When the house connects
-        its Supabase backend, these entries become real sign-ins with enforced authority — the
-        book is already ruled for it.</p>
       </div>
-
       <div class="registry-book">
         <h4 class="settings-title">The book as it stands</h4>
-        <div class="registry-list" id="registryList">
-          <!-- rendered by app.js -->
-        </div>
+        <div class="registry-list" id="registryList"></div>
       </div>
     </div>
   </section>
 
-  <!-- ══════════ TAB: SETTINGS ══════════ -->
+  <!-- ══════════ SETTINGS ══════════ -->
   <section class="panel" id="tab-settings">
     <h3 class="section-head">Settings <span class="section-sub">— the machinery behind the paper</span></h3>
-
     <div class="settings-block">
       <h4 class="settings-title">Your own AI keys</h4>
-      <p class="settings-desc">
-        The editor writes with the paper's house keys by default. Paste your own below to use
-        yours instead — they are saved <b>only in this browser</b> (never uploaded, never shared)
-        and take effect immediately.
-      </p>
-      <div class="field">
-        <label class="field-label" for="keyGemini">Gemini API key <span class="field-hint">(free at aistudio.google.com — starts with AIzaSy or AQ.)</span></label>
-        <input class="field-input mono" type="password" id="keyGemini" placeholder="AQ.… or AIzaSy…" autocomplete="off">
-      </div>
-      <div class="field">
-        <label class="field-label" for="keyGroq">Groq API key <span class="field-hint">(free at console.groq.com — starts with gsk_)</span></label>
-        <input class="field-input mono" type="password" id="keyGroq" placeholder="gsk_…" autocomplete="off">
-      </div>
-      <div class="settings-actions">
-        <button class="btn-save" onclick="saveKeys()">Save my keys</button>
-        <button class="btn-clear" onclick="clearKeys()">Use the house keys again</button>
-      </div>
-      <p class="settings-status mono" id="keysStatus">Using the paper's house keys.</p>
+      <p class="settings-desc">The editor writes with the house keys by default. Paste your own to use yours instead — saved <b>only in this browser</b>, effective immediately.</p>
+      <div class="field"><label class="field-label" for="keyGemini">Gemini API key <span class="field-hint">(free at aistudio.google.com)</span></label><input class="field-input mono" type="password" id="keyGemini" autocomplete="off"></div>
+      <div class="field"><label class="field-label" for="keyGroq">Groq API key <span class="field-hint">(free at console.groq.com — starts with gsk_)</span></label><input class="field-input mono" type="password" id="keyGroq" autocomplete="off"></div>
+      <div class="settings-actions"><button class="btn-save" onclick="saveKeys()">Save my keys</button><button class="btn-clear" onclick="clearKeys()">Use the house keys</button></div>
+      <p class="settings-status mono" id="keysStatus"></p>
     </div>
-
     <div class="section-rule"></div>
-
     <div class="settings-block">
       <h4 class="settings-title">The wire</h4>
-      <p class="settings-desc">
-        Amazon connection is configured server-side and shows in the colophon below. Sandbox mode
-        prints test figures; production mode (a one-line switch, no code) prints real sales.
-      </p>
+      <p class="settings-desc" id="wireDetail">Amazon connection is configured server-side. Its live state shows in the masthead stamp and the colophon below.</p>
     </div>
   </section>
 
-  <!-- ══════════ COLOPHON ══════════ -->
   <footer class="colophon">
     <div class="mast-rule-bottom"></div>
     <div class="colophon-row mono">
       <span>THE STOREFRONT LEDGER</span>
-      <span id="colophonStatus">Printed from demonstration figures</span>
+      <span id="colophonStatus">Reading the wire…</span>
       <span id="colophonMeta">Region — · Marketplace —</span>
     </div>
   </footer>
