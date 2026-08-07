@@ -712,9 +712,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // (or for the browser-only fallback) the gate decides.
   const session = getSession();
   if (session?.token) {
-    state.localAuth = false;
-    gateHide(session);
-    renderStaff();
+    // A server token must be re-checked against Supabase before we trust it —
+    // never enter on a browser flag alone.
+    gateShow(); // show the door immediately in case verification fails
+    staffApi('verify', { token: session.token }).then(res => {
+      if (res?.success) {
+        state.localAuth = false;
+        gateHide({ name: res.name, role: res.role, token: session.token });
+        renderStaff();
+      } else {
+        localStorage.removeItem(LS_SESSION);
+      }
+    });
   } else if (session && getStaff().some(p => p.passHash)) {
     state.localAuth = true;
     gateHide(session);

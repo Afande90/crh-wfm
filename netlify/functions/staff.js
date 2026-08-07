@@ -90,6 +90,13 @@ exports.handler = async (event) => {
       return reply({ success: true, hasKeeper: rows.length > 0 });
     }
 
+    if (action === 'verify') {
+      // Confirm a stored session is real and unexpired — the browser flag
+      // alone is never trusted.
+      const me = await requireSession(body.token);
+      return reply({ success: true, name: me.name, role: me.role });
+    }
+
     if (action === 'bootstrap') {
       const { name, pass } = body;
       if (!name || !pass || pass.length < 4) throw new Error('a name and a passcode of at least 4 characters');
