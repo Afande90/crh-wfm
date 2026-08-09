@@ -59,6 +59,51 @@ async function spFetch(token, path, params = {}) {
   return json;
 }
 
+// ── Real Amazon fees out of the Finances API payload ────────────────
+// Sums every negative fee/charge across shipment and service events.
+function sumAmazonFees(financeRes) {
+  const ev = financeRes?.payload?.FinancialEvents;
+  if (!ev) return null;
+  let fees = 0;
+  const addList = (list) => (list || []).forEach(f => {
+    const amt = parseFloat(f?.FeeAmount?.CurrencyAmount ?? f?.ChargeAmount?.CurrencyAmount ?? 0);
+    if (amt < 0) fees += Math.abs(amt);
+  });
+  (ev.ShipmentEventList || []).forEach(s => {
+    (s.ShipmentItemList || []).forEach(it => { addList(it.ItemFeeList); });
+    addList(s.ShipmentFeeList);
+  });
+  (ev.ServiceFeeEventList || []).forEach(s => addList(s.FeeList));
+  return Math.round(fees);
+}
+
+// ── Supabase history (best-effort persistence of daily snapshots) ────
+const SB_URL = (process.env.SUPABASE_URL || '').trim().replace(/\/$/, '');
+const SB_KEY = (process.env.SUPABASE_SERVICE_KEY || '').trim();
+
+async function sbUpsertHistory(row) {
+  if (!SB_URL || !SB_KEY) return;
+  await fetch(`${SB_URL}/rest/v1/ledger_history?on_conflict=day`, {
+    method: 'POST',
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(row),
+  });
+}
+
+async function sbReadHistory(days) {
+  if (!SB_URL || !SB_KEY) return [];
+  const res = await fetch(`${SB_URL}/rest/v1/ledger_history?select=day,revenue,net,units,orders,margin&order=day.asc&limit=${days}`, {
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
 // Resolve a fetch but never throw — records the outcome in `diag` so the
 // dashboard can show exactly which endpoint answered and why one didn't.
 async function spFetchSafe(token, path, params, diag, label) {
@@ -124,7 +169,7 @@ exports.handler = async (event) => {
       : new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
     const diag = [{ endpoint: 'Login with Amazon (auth)', ok: true, note: 'token obtained' }];
-    const [ordersRes, inventoryRes] = await Promise.all([
+    const [ordersRes, inventoryRes, financeRes] = await Promise.all([
       spFetchSafe(token, '/orders/v0/orders', {
         MarketplaceIds: MARKETPLACE,
         CreatedAfter: createdAfter,
@@ -135,6 +180,10 @@ exports.handler = async (event) => {
         granularityId: MARKETPLACE,
         marketplaceIds: MARKETPLACE,
       }, diag, 'FBA Inventory'),
+      SANDBOX ? Promise.resolve(null) : spFetchSafe(token, '/finances/v0/financialEvents', {
+        PostedAfter: createdAfter,
+        MaxResultsPerPage: 100,
+      }, diag, 'Finances (fees)'),
     ]);
 
     const orders = ordersRes?.payload?.Orders || [];
@@ -158,18 +207,32 @@ exports.handler = async (event) => {
     });
     const daily = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date));
 
-    // Fee/COGS estimates until the Finances API is wired in production
-    const fbaFees = revenue * 0.11;
+    // Real Amazon fees from the Finances API when the role is approved;
+    // otherwise fall back to an estimate and flag it.
+    const realFees = financeRes ? sumAmazonFees(financeRes) : null;
+    const feesReal = realFees !== null && realFees > 0;
+    const fbaFees = feesReal ? realFees : revenue * 0.11;
+
+    // COGS is the seller's own purchase cost — Amazon never knows it, so it
+    // stays an estimate until the owner enters real costs. Ad spend needs the
+    // Advertising API. Both are clearly tagged 'est.' in the UI.
     const cogs = revenue * 0.4;
     const adSpend = revenue * 0.12;
     const netProfit = revenue - cogs - fbaFees - adSpend;
     const margin = revenue > 0 ? +((netProfit / revenue) * 100).toFixed(1) : 0;
 
-    // Report which endpoints actually returned so the UI can tell live vs empty
-    const sources = {
-      orders: !!ordersRes,
-      inventory: !!inventoryRes,
-    };
+    const sources = { orders: !!ordersRes, inventory: !!inventoryRes, finances: !!financeRes };
+
+    // Persist today's snapshot and read back real history (best-effort — a
+    // missing table or slow DB never breaks the dashboard).
+    let history = [];
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      await sbUpsertHistory({ day: today, revenue: Math.round(revenue), net: Math.round(netProfit), units, orders: orders.length, margin });
+      history = await sbReadHistory(30);
+    } catch (histErr) {
+      console.warn('[sp-api-data] history unavailable:', histErr.message);
+    }
 
     return {
       statusCode: 200,
@@ -179,6 +242,7 @@ exports.handler = async (event) => {
         range,
         meta,
         sources,
+        feesReal,
         kpis: {
           revenue: Math.round(revenue),
           netProfit: Math.round(netProfit),
@@ -191,6 +255,7 @@ exports.handler = async (event) => {
         orders: orders.slice(0, 10),
         totalOrders: orders.length,
         daily,
+        history,
         inventory,
         diagnostics: diag,
         syncedAt: new Date().toISOString(),

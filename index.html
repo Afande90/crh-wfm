@@ -177,7 +177,7 @@
     <h3 class="section-head">The Week, Drawn <span class="section-sub">— profit by day, from live orders</span></h3>
     <div class="chart-duo">
       <div class="chart-block">
-        <div class="chart-title mono">PROFIT TREND</div>
+        <div class="chart-title mono">PROFIT TREND — REAL HISTORY</div>
         <div class="chart-box" id="chartTrend"><p class="chart-empty">No figures on the wire yet.</p></div>
       </div>
       <div class="chart-block">
@@ -185,6 +185,7 @@
         <div class="chart-box" id="chartDaily"><p class="chart-empty">No figures on the wire yet.</p></div>
       </div>
     </div>
+    <p class="footnote" id="historyNote">Real history begins recording now — the trend fills in day by day.</p>
   </section>
 
   <!-- ══════════ DISPATCHES ══════════ -->
@@ -206,7 +207,7 @@
       <tbody>
         <tr><td class="l-item">Gross takings</td><td class="l-bar"><span class="bar in" style="width:0%"></span></td><td class="l-amt mono" data-ledger="revenue">—</td></tr>
         <tr><td class="l-item">Cost of goods <span class="est">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="cogs">—</td></tr>
-        <tr><td class="l-item">Fulfilment &amp; fees <span class="est">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="fbaFees">—</td></tr>
+        <tr><td class="l-item">Fulfilment &amp; fees <span class="est" id="feesEst">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="fbaFees">—</td></tr>
         <tr><td class="l-item">Advertising <span class="est">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="adSpend">—</td></tr>
         <tr class="l-total"><td class="l-item">Kept in the till</td><td class="l-bar"><span class="bar kept" style="width:0%"></span></td><td class="l-amt mono kept" data-ledger="netProfit">—</td></tr>
       </tbody>
