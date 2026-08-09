@@ -128,8 +128,19 @@ function renderReal(d) {
   // Dispatches from the real state of things
   renderDispatches(d, k, quiet);
 
-  // Charts from real per-day figures
-  renderCharts(d.daily || []);
+  // Charts from real per-day figures (persisted history when we have it)
+  renderCharts(d);
+
+  // Fees: drop the "est." tag on the fee line when they're real from Amazon
+  const feeTag = document.getElementById('feesEst');
+  if (feeTag) feeTag.style.display = d.feesReal ? 'none' : '';
+  const histNote = document.getElementById('historyNote');
+  if (histNote) {
+    const n = (d.history || []).length;
+    histNote.textContent = n >= 2
+      ? `Real history: ${n} day${n > 1 ? 's' : ''} recorded and counting.`
+      : 'Real history begins recording now — the trend fills in day by day.';
+  }
 
   // Verdict
   if (quiet) setVerdict('quiet');
@@ -320,24 +331,36 @@ function renderDispatches(d, k, quiet) {
 }
 
 // ─── CHARTS — drawn only from real per-day figures ───
-function renderCharts(daily) {
+function renderCharts(d) {
+  const daily = d.daily || [];
+  const history = d.history || [];
   const trendBox = document.getElementById('chartTrend');
   const dailyBox = document.getElementById('chartDaily');
   const spark = document.getElementById('boardSpark');
   const emptyMsg = '<p class="chart-empty">No figures on the wire yet.</p>';
+  const buildMsg = '<p class="chart-empty">Real history builds day by day — the line fills in as the days pass.</p>';
 
-  if (!daily.length) {
-    if (trendBox) trendBox.innerHTML = emptyMsg;
-    if (dailyBox) dailyBox.innerHTML = emptyMsg;
+  // Trend: prefer the persisted multi-day NET-PROFIT history (real days
+  // accumulating in the database). Fall back to this window's daily revenue.
+  if (history.length >= 2) {
+    drawTrend('chartTrend', history.map(h => h.net), history.map(h => h.day.slice(5)));
+    drawSpark('boardSpark', history.map(h => h.net));
+  } else if (daily.length) {
+    drawTrend('chartTrend', daily.map(x => x.revenue), daily.map(x => x.date.slice(5)));
+    drawSpark('boardSpark', daily.map(x => x.revenue));
+  } else {
+    if (trendBox) trendBox.innerHTML = history.length ? buildMsg : emptyMsg;
     if (spark) spark.innerHTML = '';
-    return;
   }
 
-  const values = daily.map(d => d.revenue);
-  const labels = daily.map(d => d.date.slice(5)); // MM-DD
-  drawTrend('chartTrend', values, labels);
-  drawDaily('chartDaily', values.slice(-7), labels.slice(-7));
-  drawSpark('boardSpark', values);
+  // Daily bars: this window's real per-day revenue.
+  if (daily.length) {
+    const values = daily.map(x => x.revenue);
+    const labels = daily.map(x => x.date.slice(5));
+    drawDaily('chartDaily', values.slice(-7), labels.slice(-7));
+  } else if (dailyBox) {
+    dailyBox.innerHTML = emptyMsg;
+  }
 }
 
 function svgEl(container, html) {
