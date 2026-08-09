@@ -551,6 +551,24 @@ function reflectKeyStatus() {
   setText('keysStatus', parts.length
     ? `Using YOUR ${parts.join(' and ')} key${parts.length > 1 ? 's' : ''} (saved in this browser).`
     : 'Using the paper’s house keys.');
+
+  // Confirm the house keys really are stored on the server — proof they exist
+  // without ever showing the secret values.
+  fetch('/.netlify/functions/ai-editor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'keystatus' }),
+  }).then(r => r.json()).then(s => {
+    const el = document.getElementById('houseKeyStatus');
+    if (!el) return;
+    if (s?.success) {
+      el.innerHTML =
+        `House Gemini key: <b class="${s.houseGemini ? 'kept' : 'spent'}">${s.houseGemini ? 'STORED ✓' : 'missing ✗'}</b>` +
+        ` &nbsp;·&nbsp; House Groq key: <b class="${s.houseGroq ? 'kept' : 'spent'}">${s.houseGroq ? 'STORED ✓' : 'missing ✗'}</b>`;
+    } else {
+      el.textContent = 'Could not reach the key service.';
+    }
+  }).catch(() => {});
 }
 
 // ─── STAFF & SESSIONS (Supabase via /staff) ──────────
