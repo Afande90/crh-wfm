@@ -14,6 +14,17 @@ const REFRESH_MS = 60000; // re-read the wire every minute
 const LS_KEYS = 'ledger_ai_keys';
 const LS_STAFF = 'ledger_staff';
 const LS_SESSION = 'ledger_session';
+const LS_COSTS = 'ledger_costs';
+
+// The owner's real cost inputs. `set` stays false until they save real
+// numbers — until then, profit is clearly an estimate, never asserted.
+function getCosts() {
+  try {
+    const c = JSON.parse(localStorage.getItem(LS_COSTS) || 'null');
+    if (c && typeof c.cogs === 'number') return c;
+  } catch { /* fall through */ }
+  return { cogs: 40, ads: 12, set: false };
+}
 
 // ─── FETCH ───────────────────────────────────────────
 async function fetchData(range) {
@@ -22,7 +33,8 @@ async function fetchData(range) {
   setWire('syncing');
 
   try {
-    const res  = await fetch(`/.netlify/functions/sp-api-data?range=${range}`);
+    const c = getCosts();
+    const res  = await fetch(`/.netlify/functions/sp-api-data?range=${range}&cogs=${c.cogs}&ads=${c.ads}&costsSet=${c.set ? 1 : 0}`);
     const json = await res.json();
 
     if (json.meta) renderMeta(json.meta);
@@ -74,52 +86,80 @@ function renderMeta(meta) {
 }
 
 function renderReal(d) {
-  const k = d.kpis || { revenue: 0, cogs: 0, fbaFees: 0, adSpend: 0, netProfit: 0, margin: 0, units: 0 };
+  const k = d.kpis || { revenue: 0, units: 0 };
   state.lastKpis = k;
   const period = RANGE_WORDS[state.activeRange] || state.activeRange;
   const orderCount = d.totalOrders ?? (d.orders?.length || 0);
   const quiet = k.revenue === 0 && orderCount === 0;
+  const profitReal = !!d.profitReal;          // every input is real
+  const hasProfit = k.netProfit !== null && k.netProfit !== undefined;
 
-  // Lead story
+  // The hero number: real NET profit when we have it, otherwise real REVENUE.
+  // Never a guessed profit.
   const lead = document.getElementById('leadProfit');
   if (lead) {
-    lead.textContent = (k.netProfit < 0 ? '−' : '') + money(k.netProfit);
-    lead.classList.toggle('loss', k.netProfit < 0);
+    if (hasProfit) {
+      lead.textContent = (k.netProfit < 0 ? '−' : '') + money(k.netProfit);
+      lead.classList.toggle('loss', k.netProfit < 0);
+    } else {
+      lead.textContent = money(k.revenue);   // real takings
+      lead.classList.remove('loss');
+    }
   }
+  setText('leadKicker', hasProfit ? `NET PROFIT — ${period}` : `REVENUE — ${period}`);
   setText('leadPeriod', period);
+
   if (quiet) {
     setText('leadHeadline', 'The wire is connected — and brought no sales for this period.');
     setText('leadDeck', 'That is Amazon’s real answer, not an error. Either there were no orders in this window, or the app’s data access is still awaiting approval in Seller Central.');
+  } else if (!hasProfit) {
+    const missing = [];
+    if (!d.feesReal) missing.push('Amazon fees (approve the Finance role in Seller Central)');
+    if (!d.costsSet) missing.push('your cost of goods (enter it in Settings)');
+    setText('leadHeadline',
+      `Your store took in ${money(k.revenue)} — real, from ${fmt(orderCount)} orders and ${fmt(k.units)} units.`);
+    setText('leadDeck',
+      `Profit is not shown because it would be a guess. To see true profit we still need: ${missing.join(' and ')}. Everything above is real; nothing here is estimated.`);
   } else {
     setText('leadHeadline',
       k.netProfit >= 0
-        ? `Your store kept ${money(k.netProfit)} after every cost — ${fmt(k.units)} units across ${fmt(orderCount)} orders.`
-        : `The store ran at a loss of ${money(k.netProfit)} this period against ${money(k.revenue)} in takings.`);
+        ? `Your store kept ${money(k.netProfit)} after every real cost — ${fmt(k.units)} units across ${fmt(orderCount)} orders.`
+        : `The store ran at a real loss of ${money(k.netProfit)} against ${money(k.revenue)} in takings.`);
     setText('leadDeck',
-      `Gross takings of ${money(k.revenue)}, less estimated goods (${money(k.cogs)}), fees (${money(k.fbaFees)}), and advertising (${money(k.adSpend)}). Live from Amazon.`);
+      `Gross takings of ${money(k.revenue)}, less goods (${money(k.cogs)}), Amazon fees (${money(k.fbaFees)}), and advertising (${money(k.adSpend)}). Every figure real.`);
   }
 
-  // Stats
+  // Stats — real revenue/units/orders always; margin only when real.
   setText('statRevenue', money(k.revenue));
   setText('statUnits', fmt(k.units));
-  setText('statMargin', quiet ? '—' : `${k.margin}%`);
-  setText('statMarginNote', quiet ? '' : 'est.');
+  setText('statMargin', k.margin != null ? `${k.margin}%` : '—');
+  setText('statMarginNote', k.margin != null ? '' : 'needs costs');
   setText('statOrders', fmt(orderCount));
 
-  // Board
+  // Board hero tile
   const bp = document.getElementById('boardProfit');
   if (bp) {
-    bp.textContent = (k.netProfit < 0 ? '−' : '') + money(k.netProfit);
-    bp.classList.toggle('spent', k.netProfit < 0);
+    if (hasProfit) {
+      bp.textContent = (k.netProfit < 0 ? '−' : '') + money(k.netProfit);
+      bp.classList.toggle('spent', k.netProfit < 0);
+    } else {
+      bp.textContent = money(k.revenue);
+      bp.classList.remove('spent');
+    }
   }
-  setText('boardProfitNote', quiet ? 'no sales on the wire this period' : `net (est.) ${period.toLowerCase()} · margin ${k.margin}%`);
+  setText('boardProfitLabel', hasProfit ? 'THE TILL — NET' : 'THE TILL — TAKEN IN');
+  setText('boardProfitNote', quiet
+    ? 'no sales on the wire this period'
+    : hasProfit
+      ? `net ${period.toLowerCase()} · margin ${k.margin}%`
+      : 'real revenue · enter costs for net profit');
   setText('boardRevenue', money(k.revenue));
   setText('boardUnits', fmt(k.units));
   setText('boardOrders', fmt(orderCount));
 
-  // Ledger + dollar split
+  // Ledger + dollar split (draw only real components)
   updateLedger(k);
-  drawDollarSplit(k);
+  drawDollarSplit(k, profitReal);
 
   // Shelf + order wire (only ever from real payloads)
   updateShelf(d.inventory || []);
@@ -142,8 +182,9 @@ function renderReal(d) {
       : 'Real history begins recording now — the trend fills in day by day.';
   }
 
-  // Verdict
+  // Verdict — never cry "loss" off anything but fully real profit.
   if (quiet) setVerdict('quiet');
+  else if (!profitReal) setVerdict('estimate');
   else setVerdict(k.netProfit >= 0 ? 'good' : 'trouble');
 }
 
@@ -173,6 +214,10 @@ function setVerdict(kind) {
     stamp.textContent = 'WIRE DOWN';
     stamp.classList.add('trouble');
     if (line) line.textContent = 'The connection to Amazon could not be read — see the stamp in the masthead.';
+  } else if (kind === 'estimate') {
+    stamp.textContent = 'SALES LIVE · PROFIT ESTIMATED';
+    stamp.classList.add('caution');
+    if (line) line.textContent = 'Revenue, units and orders are real. Profit is a projection until you enter your real cost of goods in Settings.';
   } else {
     stamp.textContent = 'IN GOOD ORDER';
     if (line) line.textContent = 'The house is profitable and the wire is up.';
@@ -180,24 +225,27 @@ function setVerdict(kind) {
 }
 
 function updateLedger(k) {
+  // A null value means "not real yet" — show a dash, never a guess.
+  const cell = (val, sign) => (val == null ? '—' : `${sign && val !== 0 ? sign : ''}${money(val)}`);
   const rows = {
     revenue:  { val: k.revenue,  sign: '' },
     cogs:     { val: k.cogs,     sign: '−' },
     fbaFees:  { val: k.fbaFees,  sign: '−' },
     adSpend:  { val: k.adSpend,  sign: '−' },
-    netProfit:{ val: k.netProfit, sign: k.netProfit < 0 ? '−' : '' },
+    netProfit:{ val: k.netProfit, sign: (k.netProfit || 0) < 0 ? '−' : '' },
   };
   document.querySelectorAll('[data-ledger]').forEach(el => {
     const r = rows[el.dataset.ledger];
-    if (r) el.textContent = `${r.sign}${money(r.val)}`;
+    if (r) el.textContent = cell(r.val, r.sign);
   });
   const max = Math.max(k.revenue, 1);
-  const widths = { revenue: k.revenue, cogs: k.cogs, fbaFees: k.fbaFees, adSpend: k.adSpend, netProfit: Math.max(k.netProfit, 0) };
+  const widths = { revenue: k.revenue, cogs: k.cogs, fbaFees: k.fbaFees, adSpend: k.adSpend, netProfit: Math.max(k.netProfit || 0, 0) };
   document.querySelectorAll('#ledgerTable tr').forEach(tr => {
     const key = tr.querySelector('[data-ledger]')?.dataset.ledger;
     const bar = tr.querySelector('.bar');
-    if (key && bar && widths[key] !== undefined) {
-      bar.style.width = `${Math.min(100, Math.round((widths[key] / max) * 100))}%`;
+    if (key && bar) {
+      const v = widths[key];
+      bar.style.width = v == null ? '0%' : `${Math.min(100, Math.round((v / max) * 100))}%`;
     }
   });
 }
@@ -213,25 +261,30 @@ function updateShelf(summaries) {
     return;
   }
 
-  let low = 0, lowest = null;
-  const html = summaries.slice(0, 8).map(item => {
-    const qty  = item.totalQuantity || 0;
-    const days = Math.round(qty / 5); // rough velocity placeholder until sales history accrues
-    const pct  = Math.min(100, Math.round((days / 120) * 100));
-    const cls  = days > 80 ? 'ok' : days > 40 ? 'low' : 'crit';
-    if (cls !== 'ok') { low++; if (!lowest || days < lowest.days) lowest = { name: item.productName || item.asin, days }; }
+  // Real units on hand only — no invented "days of supply". A line is only
+  // flagged when it is genuinely out of stock (0 units), which is a fact.
+  const maxQty = Math.max(...summaries.map(i => i.totalQuantity || 0), 1);
+  let out = 0, totalUnits = 0;
+  const html = summaries.slice(0, 12).map(item => {
+    const qty = item.totalQuantity || 0;
+    totalUnits += qty;
+    const pct = Math.min(100, Math.round((qty / maxQty) * 100));
+    const cls = qty === 0 ? 'crit' : 'ok';
+    if (qty === 0) out++;
     const name = esc(item.productName || item.sellerSku || item.asin || 'Unnamed product');
 
-    return `<div class="shelf-row${cls !== 'ok' ? ' low' : ''}">
+    return `<div class="shelf-row${qty === 0 ? ' low' : ''}">
   <div class="shelf-name">${name} <span class="shelf-sku mono">${esc(item.asin || '')}</span></div>
   <div class="shelf-track"><span class="shelf-fill ${cls}" style="width:${pct}%"></span></div>
-  <div class="shelf-days mono">${qty}<span class="d">u</span></div>
+  <div class="shelf-days mono">${fmt(qty)}<span class="d">u</span></div>
 </div>`;
   }).join('');
 
   list.innerHTML = html;
   setText('boardShelf', String(summaries.length));
-  setText('boardShelfNote', low ? `${low} line${low > 1 ? 's' : ''} running low` : 'stock lines reported');
+  setText('boardShelfNote', out
+    ? `${out} out of stock · ${fmt(totalUnits)} units total`
+    : `${fmt(totalUnits)} units in stock`);
 }
 
 function updateWireTable(orders, totalCount) {
@@ -430,11 +483,16 @@ function drawSpark(id, data) {
 </svg>`);
 }
 
-function drawDollarSplit(k) {
+function drawDollarSplit(k, profitReal) {
   const box = document.getElementById('dollarSplit');
   if (!box) return;
   if (!k.revenue) {
     box.innerHTML = '<p class="empty-note">Awaiting live sales.</p>';
+    return;
+  }
+  // Only draw the split when every cost is real — otherwise it would be a guess.
+  if (!profitReal) {
+    box.innerHTML = '<p class="empty-note">The split is shown once all costs are real — approve the Finance role and enter your cost of goods in Settings. No guessed breakdown is drawn.</p>';
     return;
   }
   const parts = [
@@ -451,7 +509,7 @@ function drawDollarSplit(k) {
     `<span class="split-key"><span class="split-swatch ${p.cls}"></span>${p.key} <b class="mono">${Math.round((p.val / total) * 100)}¢</b></span>`
   ).join('');
   box.innerHTML = `<div class="split-bar">${bar}</div><div class="split-legend">${legend}</div>
-<p class="footnote">Of every dollar the store takes in, this is how it divides (cost lines estimated until the Finances API is connected). The green is yours.</p>`;
+<p class="footnote">Of every real dollar the store takes in, this is how it divides. The green is yours.</p>`;
 }
 
 // ─── DIAGNOSTICS — which endpoints answered, and why not ─
@@ -564,6 +622,40 @@ function clearKeys() {
   const g = document.getElementById('keyGemini'); if (g) g.value = '';
   const q = document.getElementById('keyGroq'); if (q) q.value = '';
   reflectKeyStatus();
+}
+
+// ─── SETTINGS: OWNER'S REAL COSTS ────────────────────
+function saveCosts() {
+  const cogs = parseFloat(document.getElementById('costCogs')?.value);
+  const adsRaw = document.getElementById('costAds')?.value;
+  const ads = adsRaw === '' || adsRaw == null ? NaN : parseFloat(adsRaw);
+  const status = document.getElementById('costsStatus');
+  if (isNaN(cogs) || cogs < 0 || cogs > 100) {
+    if (status) { status.textContent = 'Enter your cost of goods as a number between 0 and 100 (% of sales).'; status.style.color = 'var(--spent)'; }
+    return;
+  }
+  const costs = { cogs, ads: isNaN(ads) ? 0 : ads, set: true };
+  localStorage.setItem(LS_COSTS, JSON.stringify(costs));
+  if (status) { status.textContent = `Saved. Cost of goods ${cogs}%, ad spend ${costs.ads}% — profit is now shown as real.`; status.style.color = 'var(--kept)'; }
+  fetchData(state.activeRange);
+}
+
+function clearCosts() {
+  localStorage.removeItem(LS_COSTS);
+  const c = document.getElementById('costCogs'); if (c) c.value = '';
+  const a = document.getElementById('costAds'); if (a) a.value = '';
+  const status = document.getElementById('costsStatus');
+  if (status) { status.textContent = 'Cleared — profit will read “—” until real costs are entered again.'; status.style.color = 'var(--ink-faint)'; }
+  fetchData(state.activeRange);
+}
+
+function reflectCosts() {
+  const c = getCosts();
+  if (!c.set) return;
+  const ci = document.getElementById('costCogs'); if (ci) ci.value = c.cogs;
+  const ai = document.getElementById('costAds'); if (ai) ai.value = c.ads;
+  const status = document.getElementById('costsStatus');
+  if (status) status.textContent = `Using your real costs: goods ${c.cogs}%, ads ${c.ads}%.`;
 }
 
 function reflectKeyStatus() {
@@ -819,6 +911,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }));
 
   reflectKeyStatus();
+  reflectCosts();
 
   const session = getSession();
   if (session?.token) {

@@ -95,7 +95,7 @@
     </div>
     <div class="board-grid">
       <button class="board-tile hero" onclick="showTabByName('front')">
-        <div class="bt-label">The Till</div>
+        <div class="bt-label" id="boardProfitLabel">The Till</div>
         <div class="bt-value mono kept" id="boardProfit">—</div>
         <div class="bt-note" id="boardProfitNote">net profit this period</div>
         <div class="bt-spark" id="boardSpark"></div>
@@ -142,7 +142,7 @@
   <section class="panel" id="tab-front">
     <div class="lead">
       <div class="lead-left">
-        <div class="kicker">THE BOTTOM LINE — <span id="leadPeriod">THIS WEEK</span></div>
+        <div class="kicker" id="leadKicker">THE BOTTOM LINE — <span id="leadPeriod">THIS WEEK</span></div>
         <div class="lead-figure" id="leadProfit">—</div>
         <h2 class="lead-headline" id="leadHeadline">Waiting for the first figures from Amazon.</h2>
         <p class="lead-deck" id="leadDeck">Net profit is drawn from live orders less goods, Amazon's fees, and advertising. Nothing on this page is invented — if the wire is quiet, it says so.</p>
@@ -273,6 +273,15 @@
   <!-- ══════════ SETTINGS ══════════ -->
   <section class="panel" id="tab-settings">
     <h3 class="section-head">Settings <span class="section-sub">— the machinery behind the paper</span></h3>
+    <div class="settings-block">
+      <h4 class="settings-title">Your real costs — turns estimated profit into true profit</h4>
+      <p class="settings-desc">Amazon tells us your <b>sales</b>, but it can never know what your products <b>cost you</b> to buy. Until you enter that, profit is only a projection and the paper says so. Enter your real numbers and every profit figure becomes exact.</p>
+      <div class="field"><label class="field-label" for="costCogs">Cost of goods <span class="field-hint">(what you pay for stock, as % of the sale price — e.g. 35)</span></label><input class="field-input mono" type="number" min="0" max="100" id="costCogs" placeholder="40"></div>
+      <div class="field"><label class="field-label" for="costAds">Ad spend <span class="field-hint">(advertising as % of sales — enter 0 if you don't run ads)</span></label><input class="field-input mono" type="number" min="0" max="100" id="costAds" placeholder="12"></div>
+      <div class="settings-actions"><button class="btn-save" onclick="saveCosts()">Save my real costs</button><button class="btn-clear" onclick="clearCosts()">Back to estimates</button></div>
+      <p class="settings-status mono" id="costsStatus"></p>
+    </div>
+    <div class="section-rule"></div>
     <div class="settings-block">
       <h4 class="settings-title">AI keys for the Editor column</h4>
       <p class="settings-desc">Your Gemini &amp; Groq keys are already stored safely on the server (the "house keys") — that's why these boxes are empty and why you can't see the secret values here. That's normal and secure: keys are never shown in the browser. The boxes below are only if <b>Abdall</b> wants to use <b>his own</b> keys instead of yours — saved only in his browser.</p>
