@@ -273,8 +273,9 @@
   <section class="panel" id="tab-settings">
     <h3 class="section-head">Settings <span class="section-sub">— the machinery behind the paper</span></h3>
     <div class="settings-block">
-      <h4 class="settings-title">Your own AI keys</h4>
-      <p class="settings-desc">The editor writes with the house keys by default. Paste your own to use yours instead — saved <b>only in this browser</b>, effective immediately.</p>
+      <h4 class="settings-title">AI keys for the Editor column</h4>
+      <p class="settings-desc">Your Gemini &amp; Groq keys are already stored safely on the server (the "house keys") — that's why these boxes are empty and why you can't see the secret values here. That's normal and secure: keys are never shown in the browser. The boxes below are only if <b>Abdall</b> wants to use <b>his own</b> keys instead of yours — saved only in his browser.</p>
+      <p class="settings-status mono" id="houseKeyStatus">Checking the house keys…</p>
       <div class="field"><label class="field-label" for="keyGemini">Gemini API key <span class="field-hint">(free at aistudio.google.com)</span></label><input class="field-input mono" type="password" id="keyGemini" autocomplete="off"></div>
       <div class="field"><label class="field-label" for="keyGroq">Groq API key <span class="field-hint">(free at console.groq.com — starts with gsk_)</span></label><input class="field-input mono" type="password" id="keyGroq" autocomplete="off"></div>
       <div class="settings-actions"><button class="btn-save" onclick="saveKeys()">Save my keys</button><button class="btn-clear" onclick="clearKeys()">Use the house keys</button></div>

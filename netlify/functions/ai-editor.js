@@ -85,10 +85,23 @@ exports.handler = async (event) => {
     body = JSON.parse(event.body || '{}');
   } catch { /* keep empty — the editor can still write a general column */ }
 
+  const houseGemini = (process.env.GEMINI_API_KEY || '').trim();
+  const houseGroq = (process.env.GROQ_API_KEY || '').trim();
+
+  // A quick presence check for the Settings page — reports whether the house
+  // keys exist WITHOUT ever revealing them.
+  if (body.action === 'keystatus') {
+    return {
+      statusCode: 200,
+      headers: cors,
+      body: JSON.stringify({ success: true, houseGemini: !!houseGemini, houseGroq: !!houseGroq }),
+    };
+  }
+
   // A reader's own keys (from the Settings page) outrank the house keys.
   const ownKeys = body.keys || {};
-  const geminiKey = (ownKeys.gemini || process.env.GEMINI_API_KEY || '').trim();
-  const groqKey = (ownKeys.groq || process.env.GROQ_API_KEY || '').trim();
+  const geminiKey = (ownKeys.gemini || houseGemini).trim();
+  const groqKey = (ownKeys.groq || houseGroq).trim();
 
   if (!geminiKey && !groqKey) {
     return {
