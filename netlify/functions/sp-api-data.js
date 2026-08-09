@@ -140,6 +140,11 @@ exports.handler = async (event) => {
 
   try {
     const range = event.queryStringParameters?.range || '7D';
+    // Owner's cost assumptions (percent of sales). costsSet=1 means the owner
+    // entered real numbers, so profit may be presented as fact.
+    const cogsPct = Math.min(100, Math.max(0, parseFloat(event.queryStringParameters?.cogs ?? '40') || 40));
+    const adsPct = Math.min(100, Math.max(0, parseFloat(event.queryStringParameters?.ads ?? '12') || 12));
+    const costsSet = event.queryStringParameters?.costsSet === '1';
 
     // Auth can fail (bad/expired creds). Never let it 500 the whole request —
     // return success:false with a reason so the UI can show a clean status.
@@ -207,19 +212,20 @@ exports.handler = async (event) => {
     });
     const daily = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date));
 
-    // Real Amazon fees from the Finances API when the role is approved;
-    // otherwise fall back to an estimate and flag it.
+    // NO ESTIMATES. Every figure below is either real or null (shown as "—").
+    // Fees: only real Amazon fees from the Finances API count.
     const realFees = financeRes ? sumAmazonFees(financeRes) : null;
     const feesReal = realFees !== null && realFees > 0;
-    const fbaFees = feesReal ? realFees : revenue * 0.11;
+    const fbaFees = feesReal ? realFees : null;
 
-    // COGS is the seller's own purchase cost — Amazon never knows it, so it
-    // stays an estimate until the owner enters real costs. Ad spend needs the
-    // Advertising API. Both are clearly tagged 'est.' in the UI.
-    const cogs = revenue * 0.4;
-    const adSpend = revenue * 0.12;
-    const netProfit = revenue - cogs - fbaFees - adSpend;
-    const margin = revenue > 0 ? +((netProfit / revenue) * 100).toFixed(1) : 0;
+    // COGS & ad spend: only the owner's entered real numbers count.
+    const cogs = costsSet ? Math.round(revenue * (cogsPct / 100)) : null;
+    const adSpend = costsSet ? Math.round(revenue * (adsPct / 100)) : null;
+
+    // Profit exists only when EVERY input is real — otherwise null.
+    const profitReal = fbaFees !== null && cogs !== null && adSpend !== null;
+    const netProfit = profitReal ? Math.round(revenue - cogs - fbaFees - adSpend) : null;
+    const margin = (profitReal && revenue > 0) ? +((netProfit / revenue) * 100).toFixed(1) : null;
 
     const sources = { orders: !!ordersRes, inventory: !!inventoryRes, finances: !!financeRes };
 
@@ -228,7 +234,7 @@ exports.handler = async (event) => {
     let history = [];
     try {
       const today = new Date().toISOString().slice(0, 10);
-      await sbUpsertHistory({ day: today, revenue: Math.round(revenue), net: Math.round(netProfit), units, orders: orders.length, margin });
+      await sbUpsertHistory({ day: today, revenue: Math.round(revenue), net: netProfit, units, orders: orders.length, margin });
       history = await sbReadHistory(30);
     } catch (histErr) {
       console.warn('[sp-api-data] history unavailable:', histErr.message);
@@ -243,14 +249,18 @@ exports.handler = async (event) => {
         meta,
         sources,
         feesReal,
+        costsSet,
+        profitReal,
         kpis: {
           revenue: Math.round(revenue),
-          netProfit: Math.round(netProfit),
-          margin,
+          netProfit,      // null unless every input is real
+          margin,         // null unless profit is real
           units,
-          fbaFees: Math.round(fbaFees),
-          cogs: Math.round(cogs),
-          adSpend: Math.round(adSpend),
+          fbaFees,        // null unless real from Amazon Finances
+          cogs,           // null unless owner entered real cost
+          adSpend,        // null unless owner entered real ad spend
+          cogsPct,
+          adsPct,
         },
         orders: orders.slice(0, 10),
         totalOrders: orders.length,
