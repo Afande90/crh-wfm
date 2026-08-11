@@ -206,13 +206,16 @@
     <table class="ledger" id="ledgerTable">
       <tbody>
         <tr><td class="l-item">Gross takings</td><td class="l-bar"><span class="bar in" style="width:0%"></span></td><td class="l-amt mono" data-ledger="revenue">—</td></tr>
-        <tr><td class="l-item">Cost of goods <span class="est">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="cogs">—</td></tr>
-        <tr><td class="l-item">Fulfilment &amp; fees <span class="est" id="feesEst">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="fbaFees">—</td></tr>
-        <tr><td class="l-item">Advertising <span class="est">est.</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="adSpend">—</td></tr>
-        <tr class="l-total"><td class="l-item">Kept in the till</td><td class="l-bar"><span class="bar kept" style="width:0%"></span></td><td class="l-amt mono kept" data-ledger="netProfit">—</td></tr>
+        <tr><td class="l-item">Cost of goods (WAC)</td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="cogs">—</td></tr>
+        <tr><td class="l-item">Amazon fees <span class="field-hint">referral · FBA · storage · returns</span></td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="fbaFees">—</td></tr>
+        <tr><td class="l-item">Advertising</td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="adSpend">—</td></tr>
+        <tr><td class="l-item">Overhead / shipping</td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="overhead">—</td></tr>
+        <tr><td class="l-item">Pro subscription</td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="subscription">—</td></tr>
+        <tr><td class="l-item">AWS / hosting</td><td class="l-bar"><span class="bar out" style="width:0%"></span></td><td class="l-amt mono neg" data-ledger="aws">—</td></tr>
+        <tr class="l-total"><td class="l-item">Net profit</td><td class="l-bar"><span class="bar kept" style="width:0%"></span></td><td class="l-amt mono kept" data-ledger="netProfit">—</td></tr>
       </tbody>
     </table>
-    <p class="footnote">Revenue, units, and orders are live from Amazon. Lines marked <span class="est">est.</span> are modelled from revenue until the Finances API is connected, at which point they become exact.</p>
+    <p class="footnote">Sales are live from Amazon. Amazon fees arrive automatically once the Finance role is approved. Cost of goods, ad spend, overhead, subscription and hosting come from your Manual Entry Portal in Settings. Net profit shows only when every line is real.</p>
   </section>
 
   <!-- ══════════ SHELF & ORDERS ══════════ -->
@@ -274,12 +277,16 @@
   <section class="panel" id="tab-settings">
     <h3 class="section-head">Settings <span class="section-sub">— the machinery behind the paper</span></h3>
     <div class="settings-block">
-      <h4 class="settings-title">Your real costs — turns estimated profit into true profit</h4>
-      <p class="settings-desc">Amazon tells us your <b>sales</b>, but it can never know what your products <b>cost you</b> to buy. Until you enter that, profit is only a projection and the paper says so. Enter your real numbers and every profit figure becomes exact.</p>
-      <div class="field"><label class="field-label" for="costCogs">Cost of goods <span class="field-hint">(what you pay for stock, as % of the sale price — e.g. 35)</span></label><input class="field-input mono" type="number" min="0" max="100" id="costCogs" placeholder="40"></div>
-      <div class="field"><label class="field-label" for="costAds">Ad spend <span class="field-hint">(advertising as % of sales — enter 0 if you don't run ads)</span></label><input class="field-input mono" type="number" min="0" max="100" id="costAds" placeholder="12"></div>
-      <div class="settings-actions"><button class="btn-save" onclick="saveCosts()">Save my real costs</button><button class="btn-clear" onclick="clearCosts()">Back to estimates</button></div>
+      <h4 class="settings-title">Manual Entry Portal — the costs Amazon can't see</h4>
+      <p class="settings-desc">Amazon reports your <b>sales</b> and its own <b>fees</b>, but never what your goods cost you, what you spend on ads, your overhead, or your hosting bill. Enter them here and the Net Profit engine becomes 100% real — no guesses anywhere.</p>
+      <div class="field"><label class="field-label" for="costCogs">Cost of goods (WAC) <span class="field-hint">what you pay for stock, as % of the sale price — e.g. 35</span></label><input class="field-input mono" type="number" min="0" max="100" id="costCogs" placeholder="0"></div>
+      <div class="field"><label class="field-label" for="costAd">Ad spend for this period <span class="field-hint">total advertising $ (0 if none)</span></label><input class="field-input mono" type="number" min="0" id="costAd" placeholder="0"></div>
+      <div class="field"><label class="field-label" for="costOverhead">Custom overhead / extra shipping <span class="field-hint">$ for this period (0 if none)</span></label><input class="field-input mono" type="number" min="0" id="costOverhead" placeholder="0"></div>
+      <div class="field"><label class="field-label" for="costSub">Amazon Pro subscription <span class="field-hint">$/month — default 39.99</span></label><input class="field-input mono" type="number" min="0" id="costSub" placeholder="39.99"></div>
+      <div class="field"><label class="field-label" for="costAws">AWS / hosting <span class="field-hint">$/month — until the AWS Billing API is connected</span></label><input class="field-input mono" type="number" min="0" id="costAws" placeholder="0"></div>
+      <div class="settings-actions"><button class="btn-save" onclick="saveCosts()">Save my real ledger</button><button class="btn-clear" onclick="clearCosts()">Clear</button></div>
       <p class="settings-status mono" id="costsStatus"></p>
+      <p class="footnote">Amazon fees (referral, FBA, storage, returns, inbound) come in automatically once the <b>Finance</b> role is approved in Seller Central. Per-unit / per-ASIN WAC and manual TACoS/ACoS/ROAS arrive in the next phase.</p>
     </div>
     <div class="section-rule"></div>
     <div class="settings-block">
