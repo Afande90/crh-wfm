@@ -139,12 +139,17 @@ exports.handler = async (event) => {
   }
 
   try {
-    const range = event.queryStringParameters?.range || '7D';
-    // Owner's cost assumptions (percent of sales). costsSet=1 means the owner
-    // entered real numbers, so profit may be presented as fact.
-    const cogsPct = Math.min(100, Math.max(0, parseFloat(event.queryStringParameters?.cogs ?? '40') || 40));
-    const adsPct = Math.min(100, Math.max(0, parseFloat(event.queryStringParameters?.ads ?? '12') || 12));
-    const costsSet = event.queryStringParameters?.costsSet === '1';
+    const q = event.queryStringParameters || {};
+    const range = q.range || '7D';
+    // Owner's manual ledger inputs (the Manual Entry Portal). costsSet=1 means
+    // the owner has saved real numbers, so profit may be presented as fact.
+    const num = (v, d = 0) => { const n = parseFloat(v); return isNaN(n) ? d : n; };
+    const cogsPct = Math.min(100, Math.max(0, num(q.cogs, 40)));   // % of sales
+    const adSpendManual = Math.max(0, num(q.ad, 0));               // $ for the period
+    const overheadManual = Math.max(0, num(q.overhead, 0));        // $ for the period
+    const subMonthly = Math.max(0, num(q.sub, 39.99));            // $/month (Pro plan)
+    const awsMonthly = Math.max(0, num(q.aws, 0));                // $/month hosting
+    const costsSet = q.costsSet === '1';
 
     // Auth can fail (bad/expired creds). Never let it 500 the whole request —
     // return success:false with a reason so the UI can show a clean status.
@@ -216,15 +221,23 @@ exports.handler = async (event) => {
     // Fees: only real Amazon fees from the Finances API count.
     const realFees = financeRes ? sumAmazonFees(financeRes) : null;
     const feesReal = realFees !== null && realFees > 0;
-    const fbaFees = feesReal ? realFees : null;
+    const amazonFees = feesReal ? realFees : null;
 
-    // COGS & ad spend: only the owner's entered real numbers count.
+    // Manual ledger inputs — real once the owner saves them. Monthly fixed
+    // costs (subscription, AWS) are prorated to the period by day count.
+    const proration = days / 30;
     const cogs = costsSet ? Math.round(revenue * (cogsPct / 100)) : null;
-    const adSpend = costsSet ? Math.round(revenue * (adsPct / 100)) : null;
+    const adSpend = costsSet ? Math.round(adSpendManual) : null;
+    const overhead = costsSet ? Math.round(overheadManual) : null;
+    const subscription = costsSet ? Math.round(subMonthly * proration) : null;
+    const aws = costsSet ? Math.round(awsMonthly * proration) : null;
 
-    // Profit exists only when EVERY input is real — otherwise null.
-    const profitReal = fbaFees !== null && cogs !== null && adSpend !== null;
-    const netProfit = profitReal ? Math.round(revenue - cogs - fbaFees - adSpend) : null;
+    // Profit exists only when EVERY input is real — Amazon fees AND the manual
+    // ledger — otherwise null.
+    const profitReal = amazonFees !== null && costsSet;
+    const netProfit = profitReal
+      ? Math.round(revenue - amazonFees - cogs - adSpend - overhead - subscription - aws)
+      : null;
     const margin = (profitReal && revenue > 0) ? +((netProfit / revenue) * 100).toFixed(1) : null;
 
     const sources = { orders: !!ordersRes, inventory: !!inventoryRes, finances: !!financeRes };
@@ -253,14 +266,16 @@ exports.handler = async (event) => {
         profitReal,
         kpis: {
           revenue: Math.round(revenue),
-          netProfit,      // null unless every input is real
-          margin,         // null unless profit is real
+          netProfit,          // null unless every input is real
+          margin,             // null unless profit is real
           units,
-          fbaFees,        // null unless real from Amazon Finances
-          cogs,           // null unless owner entered real cost
-          adSpend,        // null unless owner entered real ad spend
+          fbaFees: amazonFees, // real Amazon fees (referral+FBA+storage+returns…) or null
+          cogs,               // null unless owner entered real cost
+          adSpend,            // manual, null unless set
+          overhead,           // manual, null unless set
+          subscription,       // prorated Pro-plan fee, null unless set
+          aws,                // prorated hosting, null unless set
           cogsPct,
-          adsPct,
         },
         orders: orders.slice(0, 10),
         totalOrders: orders.length,

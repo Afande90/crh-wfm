@@ -21,9 +21,11 @@ const LS_COSTS = 'ledger_costs';
 function getCosts() {
   try {
     const c = JSON.parse(localStorage.getItem(LS_COSTS) || 'null');
-    if (c && typeof c.cogs === 'number') return c;
+    if (c && typeof c.cogs === 'number') {
+      return { cogs: c.cogs, ad: c.ad ?? 0, overhead: c.overhead ?? 0, sub: c.sub ?? 39.99, aws: c.aws ?? 0, set: !!c.set };
+    }
   } catch { /* fall through */ }
-  return { cogs: 40, ads: 12, set: false };
+  return { cogs: 0, ad: 0, overhead: 0, sub: 39.99, aws: 0, set: false };
 }
 
 // ─── FETCH ───────────────────────────────────────────
@@ -34,7 +36,8 @@ async function fetchData(range) {
 
   try {
     const c = getCosts();
-    const res  = await fetch(`/.netlify/functions/sp-api-data?range=${range}&cogs=${c.cogs}&ads=${c.ads}&costsSet=${c.set ? 1 : 0}`);
+    const qs = `range=${range}&cogs=${c.cogs}&ad=${c.ad}&overhead=${c.overhead}&sub=${c.sub}&aws=${c.aws}&costsSet=${c.set ? 1 : 0}`;
+    const res  = await fetch(`/.netlify/functions/sp-api-data?${qs}`);
     const json = await res.json();
 
     if (json.meta) renderMeta(json.meta);
@@ -228,18 +231,25 @@ function updateLedger(k) {
   // A null value means "not real yet" — show a dash, never a guess.
   const cell = (val, sign) => (val == null ? '—' : `${sign && val !== 0 ? sign : ''}${money(val)}`);
   const rows = {
-    revenue:  { val: k.revenue,  sign: '' },
-    cogs:     { val: k.cogs,     sign: '−' },
-    fbaFees:  { val: k.fbaFees,  sign: '−' },
-    adSpend:  { val: k.adSpend,  sign: '−' },
-    netProfit:{ val: k.netProfit, sign: (k.netProfit || 0) < 0 ? '−' : '' },
+    revenue:     { val: k.revenue,      sign: '' },
+    cogs:        { val: k.cogs,         sign: '−' },
+    fbaFees:     { val: k.fbaFees,      sign: '−' },
+    adSpend:     { val: k.adSpend,      sign: '−' },
+    overhead:    { val: k.overhead,     sign: '−' },
+    subscription:{ val: k.subscription, sign: '−' },
+    aws:         { val: k.aws,          sign: '−' },
+    netProfit:   { val: k.netProfit,    sign: (k.netProfit || 0) < 0 ? '−' : '' },
   };
   document.querySelectorAll('[data-ledger]').forEach(el => {
     const r = rows[el.dataset.ledger];
     if (r) el.textContent = cell(r.val, r.sign);
   });
   const max = Math.max(k.revenue, 1);
-  const widths = { revenue: k.revenue, cogs: k.cogs, fbaFees: k.fbaFees, adSpend: k.adSpend, netProfit: Math.max(k.netProfit || 0, 0) };
+  const widths = {
+    revenue: k.revenue, cogs: k.cogs, fbaFees: k.fbaFees, adSpend: k.adSpend,
+    overhead: k.overhead, subscription: k.subscription, aws: k.aws,
+    netProfit: Math.max(k.netProfit || 0, 0),
+  };
   document.querySelectorAll('#ledgerTable tr').forEach(tr => {
     const key = tr.querySelector('[data-ledger]')?.dataset.ledger;
     const bar = tr.querySelector('.bar');
@@ -625,37 +635,50 @@ function clearKeys() {
 }
 
 // ─── SETTINGS: OWNER'S REAL COSTS ────────────────────
+function numOr(id, dflt) {
+  const raw = document.getElementById(id)?.value;
+  if (raw === '' || raw == null) return dflt;
+  const n = parseFloat(raw);
+  return isNaN(n) ? dflt : n;
+}
+
 function saveCosts() {
-  const cogs = parseFloat(document.getElementById('costCogs')?.value);
-  const adsRaw = document.getElementById('costAds')?.value;
-  const ads = adsRaw === '' || adsRaw == null ? NaN : parseFloat(adsRaw);
+  const cogs = numOr('costCogs', NaN);
   const status = document.getElementById('costsStatus');
   if (isNaN(cogs) || cogs < 0 || cogs > 100) {
-    if (status) { status.textContent = 'Enter your cost of goods as a number between 0 and 100 (% of sales).'; status.style.color = 'var(--spent)'; }
+    if (status) { status.textContent = 'Enter cost of goods as a % of sales between 0 and 100.'; status.style.color = 'var(--spent)'; }
     return;
   }
-  const costs = { cogs, ads: isNaN(ads) ? 0 : ads, set: true };
+  const costs = {
+    cogs,
+    ad: Math.max(0, numOr('costAd', 0)),
+    overhead: Math.max(0, numOr('costOverhead', 0)),
+    sub: Math.max(0, numOr('costSub', 39.99)),
+    aws: Math.max(0, numOr('costAws', 0)),
+    set: true,
+  };
   localStorage.setItem(LS_COSTS, JSON.stringify(costs));
-  if (status) { status.textContent = `Saved. Cost of goods ${cogs}%, ad spend ${costs.ads}% — profit is now shown as real.`; status.style.color = 'var(--kept)'; }
+  if (status) { status.textContent = `Saved. Your ledger is live — net profit is now fully real (Amazon fees still need the Finance role).`; status.style.color = 'var(--kept)'; }
   fetchData(state.activeRange);
 }
 
 function clearCosts() {
   localStorage.removeItem(LS_COSTS);
-  const c = document.getElementById('costCogs'); if (c) c.value = '';
-  const a = document.getElementById('costAds'); if (a) a.value = '';
+  ['costCogs', 'costAd', 'costOverhead', 'costSub', 'costAws'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
   const status = document.getElementById('costsStatus');
-  if (status) { status.textContent = 'Cleared — profit will read “—” until real costs are entered again.'; status.style.color = 'var(--ink-faint)'; }
+  if (status) { status.textContent = 'Cleared — profit reads “—” until your ledger is entered again.'; status.style.color = 'var(--ink-faint)'; }
   fetchData(state.activeRange);
 }
 
 function reflectCosts() {
   const c = getCosts();
   if (!c.set) return;
-  const ci = document.getElementById('costCogs'); if (ci) ci.value = c.cogs;
-  const ai = document.getElementById('costAds'); if (ai) ai.value = c.ads;
+  const map = { costCogs: c.cogs, costAd: c.ad, costOverhead: c.overhead, costSub: c.sub, costAws: c.aws };
+  Object.entries(map).forEach(([id, v]) => { const el = document.getElementById(id); if (el) el.value = v; });
   const status = document.getElementById('costsStatus');
-  if (status) status.textContent = `Using your real costs: goods ${c.cogs}%, ads ${c.ads}%.`;
+  if (status) status.textContent = 'Your manual ledger is saved and in use.';
 }
 
 function reflectKeyStatus() {
