@@ -78,6 +78,7 @@
     <button class="tab" data-tab="front" onclick="showTab(this)">Front Page</button>
     <button class="tab" data-tab="dispatches" onclick="showTab(this)">Dispatches <span class="tab-count" id="dispatchCount" hidden>0</span></button>
     <button class="tab" data-tab="books" onclick="showTab(this)">The Books</button>
+    <button class="tab" data-tab="products" onclick="showTab(this)">Per-Product</button>
     <button class="tab" data-tab="shelf" onclick="showTab(this)">Shelf &amp; Orders</button>
     <button class="tab" data-tab="editor" onclick="showTab(this)">From the Editor</button>
     <button class="tab" data-tab="admin" onclick="showTab(this)">Administration</button>
@@ -216,6 +217,23 @@
       </tbody>
     </table>
     <p class="footnote">Sales are live from Amazon. Amazon fees arrive automatically once the Finance role is approved. Cost of goods, ad spend, overhead, subscription and hosting come from your Manual Entry Portal in Settings. Net profit shows only when every line is real.</p>
+  </section>
+
+  <!-- ══════════ PER-PRODUCT (ASIN) ══════════ -->
+  <section class="panel" id="tab-products">
+    <h3 class="section-head">Per-Product Profitability <span class="section-sub">— every ASIN, real units &amp; revenue from Amazon</span></h3>
+    <div class="table-scroll">
+      <table class="wire-table" id="productsTable">
+        <thead>
+          <tr><th>Product</th><th class="num">Units</th><th class="num">Revenue</th><th class="num">Unit cost</th><th class="num">Gross</th><th class="num">Margin</th><th></th></tr>
+        </thead>
+        <tbody id="productsBody">
+          <tr><td colspan="7" class="empty-cell">Open this tab to load per-product figures…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="footnote">Units and revenue are real, per-ASIN, from Amazon order items. Enter each product's real <b>unit cost</b> to see true gross margin and spot loss-making SKUs. (Gross = revenue − cost of goods, before Amazon fees; full net per ASIN arrives with fee attribution.) Only the Proprietor can save costs.</p>
+    <p class="settings-status mono" id="productsStatus"></p>
   </section>
 
   <!-- ══════════ SHELF & ORDERS ══════════ -->

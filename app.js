@@ -910,6 +910,68 @@ function showTab(btn) {
   btn.classList.add('active');
   const panel = document.getElementById(`tab-${btn.dataset.tab}`);
   if (panel) panel.classList.add('active');
+  if (btn.dataset.tab === 'products') loadProducts();
+}
+
+// ─── PER-PRODUCT (ASIN) PROFITABILITY ────────────────
+async function loadProducts() {
+  const tbody = document.getElementById('productsBody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">Reading per-product figures from Amazon…</td></tr>';
+  try {
+    const res = await fetch('/.netlify/functions/product-detail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ range: state.activeRange }),
+    });
+    const json = await res.json();
+    if (!json.success) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">${esc(json.error || 'Could not read per-product data.')}</td></tr>`;
+      return;
+    }
+    if (!json.products.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-cell">No product sales in this period.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = json.products.map(p => {
+      const marginCls = p.grossMargin == null ? '' : p.grossMargin < 0 ? 'spent' : p.grossMargin < 15 ? 'watch' : 'kept';
+      return `<tr>
+  <td><div class="rr-name">${esc(p.title.length > 46 ? p.title.slice(0, 46) + '…' : p.title)}</div><div class="rr-email">${esc(p.asin)}</div></td>
+  <td class="num mono">${fmt(p.units)}</td>
+  <td class="num mono">${money(p.revenue)}</td>
+  <td class="num mono">${p.unitCost == null ? '—' : money(p.unitCost)}</td>
+  <td class="num mono ${p.gross == null ? '' : p.gross < 0 ? 'spent' : 'kept'}">${p.gross == null ? '—' : (p.gross < 0 ? '−' : '') + money(p.gross)}</td>
+  <td class="num mono ${marginCls}">${p.grossMargin == null ? '—' : p.grossMargin + '%'}</td>
+  <td class="num"><button class="rr-remove" onclick="promptCost('${esc(p.asin)}')">set cost</button></td>
+</tr>`;
+    }).join('');
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">${esc(err.message)}</td></tr>`;
+  }
+}
+
+async function promptCost(asin) {
+  const status = document.getElementById('productsStatus');
+  const val = window.prompt(`Real unit cost for ${asin} (what you pay per unit, in $):`);
+  if (val == null) return;
+  const unitCost = parseFloat(val);
+  if (isNaN(unitCost) || unitCost < 0) {
+    if (status) { status.textContent = 'That was not a valid cost.'; status.style.color = 'var(--spent)'; }
+    return;
+  }
+  try {
+    const res = await fetch('/.netlify/functions/product-detail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveCost', token: getSession()?.token, asin, unitCost }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'save failed');
+    if (status) { status.textContent = `Saved unit cost for ${asin}.`; status.style.color = 'var(--kept)'; }
+    loadProducts();
+  } catch (err) {
+    if (status) { status.textContent = err.message; status.style.color = 'var(--spent)'; }
+  }
 }
 
 function showTabByName(name) {

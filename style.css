@@ -777,3 +777,7 @@ body.gated { overflow: hidden; }
 }
 .diag-note { grid-area: note; font-size: 12.5px; color: var(--ink-soft); }
 .diag-row.ok .diag-note { color: var(--ink-faint); }
+
+/* Per-product table scroll */
+.table-scroll { overflow-x: auto; }
+.table-scroll .wire-table { min-width: 560px; }
