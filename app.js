@@ -1021,7 +1021,10 @@ function showTab(btn) {
   const panel = document.getElementById(`tab-${btn.dataset.tab}`);
   if (panel) panel.classList.add('active');
   if (btn.dataset.tab === 'products') loadProducts();
+<<<<<<< HEAD
   if (btn.dataset.tab === 'reports') buildReports();
+=======
+>>>>>>> origin/claude/deploy-to-production-AobPd
 }
 
 // ─── PER-PRODUCT (ASIN) PROFITABILITY ────────────────
