@@ -80,6 +80,7 @@
     <button class="tab" data-tab="books" onclick="showTab(this)">The Books</button>
     <button class="tab" data-tab="products" onclick="showTab(this)">Per-Product</button>
     <button class="tab" data-tab="shelf" onclick="showTab(this)">Shelf &amp; Orders</button>
+    <button class="tab" data-tab="reports" onclick="showTab(this)">Weekly Reports</button>
     <button class="tab" data-tab="editor" onclick="showTab(this)">From the Editor</button>
     <button class="tab" data-tab="admin" onclick="showTab(this)">Administration</button>
     <button class="tab" data-tab="settings" onclick="showTab(this)">Settings</button>
@@ -94,6 +95,26 @@
       <div class="verdict-stamp" id="verdictStamp">READING THE WIRE…</div>
       <p class="verdict-line" id="verdictLine">Waiting for the first figures from Amazon.</p>
     </div>
+
+    <!-- Lifetime P&L + Month-over-Month trajectory -->
+    <div class="lifetime-strip" id="lifetimeStrip" hidden>
+      <div class="lt-block">
+        <span class="lt-label">LIFETIME · SINCE <span id="ltSince">—</span></span>
+        <span class="lt-value mono" id="ltNet">—</span>
+        <span class="lt-note" id="ltNetNote">net profit, inception to date</span>
+      </div>
+      <div class="lt-block">
+        <span class="lt-label">LIFETIME REVENUE</span>
+        <span class="lt-value mono" id="ltRevenue">—</span>
+        <span class="lt-note" id="ltRevNote">total takings recorded</span>
+      </div>
+      <div class="lt-block">
+        <span class="lt-label">THIS MONTH vs LAST</span>
+        <span class="lt-traj" id="ltTraj">—</span>
+        <span class="lt-note" id="ltTrajNote">month-over-month trajectory</span>
+      </div>
+    </div>
+
     <div class="board-grid">
       <button class="board-tile hero" onclick="showTabByName('front')">
         <div class="bt-label" id="boardProfitLabel">The Till</div>
@@ -249,6 +270,15 @@
         <tr><td colspan="5" class="empty-cell">No orders on the wire for this period.</td></tr>
       </tbody>
     </table>
+  </section>
+
+  <!-- ══════════ WEEKLY REPORTS ══════════ -->
+  <section class="panel" id="tab-reports">
+    <h3 class="section-head">Weekly Reports <span class="section-sub">— five standalone reports, refreshed live · MoM where history allows</span></h3>
+    <p class="footnote" style="margin-bottom:20px">Every report carries a traffic-light summary: <span class="kept">🟢 good</span> · <span class="watch">🟡 monitor</span> · <span class="spent">🔴 act now</span>. Reports render from real data; where a data source isn't connected yet, the report says so plainly rather than inventing numbers. Auto-delivery to email/Telegram every Monday activates once those channels are connected.</p>
+    <div id="reportsBody">
+      <p class="empty-note">Open this tab to build the reports from the latest figures…</p>
+    </div>
   </section>
 
   <!-- ══════════ FROM THE EDITOR ══════════ -->

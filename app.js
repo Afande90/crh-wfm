@@ -91,6 +91,8 @@ function renderMeta(meta) {
 function renderReal(d) {
   const k = d.kpis || { revenue: 0, units: 0 };
   state.lastKpis = k;
+  state.lastData = d;
+  renderLifetime(d.lifetime, d.mom);
   const period = RANGE_WORDS[state.activeRange] || state.activeRange;
   const orderCount = d.totalOrders ?? (d.orders?.length || 0);
   const quiet = k.revenue === 0 && orderCount === 0;
@@ -522,6 +524,114 @@ function drawDollarSplit(k, profitReal) {
 <p class="footnote">Of every real dollar the store takes in, this is how it divides. The green is yours.</p>`;
 }
 
+// ─── LIFETIME P&L + MoM TRAJECTORY ───────────────────
+function renderLifetime(lifetime, mom) {
+  const strip = document.getElementById('lifetimeStrip');
+  if (!strip) return;
+  if (!lifetime) { strip.hidden = true; return; }
+  strip.hidden = false;
+
+  setText('ltSince', lifetime.since || '—');
+  const net = lifetime.net;
+  const ltNet = document.getElementById('ltNet');
+  if (ltNet) {
+    ltNet.textContent = (net < 0 ? '−' : '') + money(net);
+    ltNet.className = `lt-value mono ${net < 0 ? 'spent' : 'kept'}`;
+  }
+  setText('ltNetNote', net >= 0
+    ? 'net profit, inception to date'
+    : 'net loss so far — the climb to break-even');
+  setText('ltRevenue', money(lifetime.revenue));
+  setText('ltRevNote', `${fmt(lifetime.units)} units · ${fmt(lifetime.orders)} orders · ${lifetime.days} days`);
+
+  const traj = document.getElementById('ltTraj');
+  if (traj) {
+    const map = {
+      green:  { t: '🟢 PROFITABLE & GROWING', c: 'kept' },
+      yellow: { t: '🟡 LOSS SHRINKING', c: 'watch' },
+      red:    { t: '🔴 LOSS EXPANDING', c: 'spent' },
+      none:   { t: '— NOT ENOUGH HISTORY', c: '' },
+    };
+    const v = map[mom?.trajectory || 'none'];
+    traj.textContent = v.t;
+    traj.className = `lt-traj ${v.c}`;
+  }
+  if (mom?.thisMonth && mom?.lastMonth) {
+    setText('ltTrajNote', `this month ${money(mom.thisMonth.net)} vs last ${money(mom.lastMonth.net)}`);
+  } else {
+    setText('ltTrajNote', 'a second month of history unlocks the comparison');
+  }
+}
+
+// ─── WEEKLY REPORTS (5 standalone) ───────────────────
+function light(state) {
+  return { green: '🟢', yellow: '🟡', red: '🔴', none: '⚪' }[state] || '⚪';
+}
+
+function buildReports() {
+  const box = document.getElementById('reportsBody');
+  if (!box) return;
+  const d = state.lastData;
+  if (!d) { box.innerHTML = '<p class="empty-note">No live figures yet — the reports build once the wire has data.</p>'; return; }
+  const k = d.kpis || {};
+  const period = RANGE_WORDS[state.activeRange] || state.activeRange;
+
+  // ── P&L Report (real) ──
+  const hasProfit = k.netProfit != null;
+  const plLight = !hasProfit ? 'none' : k.netProfit >= 0 ? 'green' : 'red';
+  const momLine = d.mom?.thisMonth && d.mom?.lastMonth
+    ? `MoM net: ${money(d.mom.thisMonth.net)} vs ${money(d.mom.lastMonth.net)} — ${({green:'improving',yellow:'loss shrinking',red:'loss expanding'})[d.mom.trajectory] || '—'}`
+    : 'MoM comparison unlocks with a second month of history.';
+  const pl = `
+    <div class="report">
+      <div class="report-head"><span class="report-title">${light(plLight)} P&amp;L Report</span><span class="report-period mono">${period}</span></div>
+      <table class="ledger">
+        <tbody>
+          <tr><td class="l-item">Revenue</td><td class="l-amt mono">${money(k.revenue || 0)}</td></tr>
+          <tr><td class="l-item">Amazon fees</td><td class="l-amt mono neg">${k.fbaFees == null ? '— (approve Finance role)' : '−' + money(k.fbaFees)}</td></tr>
+          <tr><td class="l-item">Cost of goods</td><td class="l-amt mono neg">${k.cogs == null ? '— (enter in Settings)' : '−' + money(k.cogs)}</td></tr>
+          <tr><td class="l-item">Ad spend</td><td class="l-amt mono neg">${k.adSpend == null ? '—' : '−' + money(k.adSpend)}</td></tr>
+          <tr><td class="l-item">Overhead · subscription · AWS</td><td class="l-amt mono neg">${k.overhead == null ? '—' : '−' + money((k.overhead||0)+(k.subscription||0)+(k.aws||0))}</td></tr>
+          <tr class="l-total"><td class="l-item">Net profit</td><td class="l-amt mono ${hasProfit && k.netProfit<0 ? 'spent':'kept'}">${hasProfit ? (k.netProfit<0?'−':'')+money(k.netProfit) : '—'}</td></tr>
+          <tr><td class="l-item">Lifetime net</td><td class="l-amt mono ${d.lifetime && d.lifetime.net<0 ? 'spent':'kept'}">${d.lifetime ? (d.lifetime.net<0?'−':'')+money(d.lifetime.net) : '—'}</td></tr>
+        </tbody>
+      </table>
+      <p class="footnote">${momLine}</p>
+    </div>`;
+
+  // ── Inventory Report (real units; store days-of-supply from history velocity) ──
+  const inv = d.inventory || [];
+  const totalUnits = inv.reduce((s, i) => s + (i.totalQuantity || 0), 0);
+  const hist = d.history || [];
+  const recent = hist.slice(-30);
+  const velocity = recent.length ? recent.reduce((s, r) => s + (r.units || 0), 0) / recent.length : 0;
+  const daysSupply = velocity > 0 ? Math.round(totalUnits / velocity) : null;
+  const invLight = daysSupply == null ? 'none' : daysSupply < 80 ? 'yellow' : 'green';
+  const invReport = `
+    <div class="report">
+      <div class="report-head"><span class="report-title">${light(invLight)} Inventory Report</span><span class="report-period mono">${period}</span></div>
+      <table class="ledger"><tbody>
+        <tr><td class="l-item">Stock lines</td><td class="l-amt mono">${fmt(inv.length)}</td></tr>
+        <tr><td class="l-item">Total units on hand</td><td class="l-amt mono">${fmt(totalUnits)}</td></tr>
+        <tr><td class="l-item">Daily sales velocity (30d)</td><td class="l-amt mono">${velocity ? velocity.toFixed(1) + ' u/day' : '— (building history)'}</td></tr>
+        <tr><td class="l-item">Days of supply</td><td class="l-amt mono ${daysSupply!=null && daysSupply<80 ? 'watch':''}">${daysSupply == null ? '—' : daysSupply + ' days'}</td></tr>
+      </tbody></table>
+      <p class="footnote">${daysSupply != null && daysSupply < 80 ? 'Below the 80-day threshold — plan a reorder.' : 'Per-ASIN days-of-supply, aged &amp; stranded flags arrive with the FBA inventory reports.'}</p>
+    </div>`;
+
+  // ── Ads / Listing / Account Health — honest "awaiting source" ──
+  const awaiting = (title, need) => `
+    <div class="report">
+      <div class="report-head"><span class="report-title">⚪ ${title}</span><span class="report-period mono">${period}</span></div>
+      <p class="empty-note">${need}</p>
+    </div>`;
+  const ads = awaiting('Ads Report', 'Awaiting the Amazon Advertising API (or manual TACoS/ACoS/ROAS entry). No ad figures are invented.');
+  const listing = awaiting('Listing Report', 'Awaiting listing content from the Catalog API (titles, bullets, images) to score optimization. Nothing is guessed.');
+  const health = awaiting('Account Health Report', 'Awaiting ODR, Late Shipment Rate and Buy Box % — these come from the Account Health data feed once approved.');
+
+  box.innerHTML = pl + invReport + ads + listing + health;
+}
+
 // ─── DIAGNOSTICS — which endpoints answered, and why not ─
 function renderDiagnostics(diag) {
   const box = document.getElementById('diagList');
@@ -911,6 +1021,7 @@ function showTab(btn) {
   const panel = document.getElementById(`tab-${btn.dataset.tab}`);
   if (panel) panel.classList.add('active');
   if (btn.dataset.tab === 'products') loadProducts();
+  if (btn.dataset.tab === 'reports') buildReports();
 }
 
 // ─── PER-PRODUCT (ASIN) PROFITABILITY ────────────────
