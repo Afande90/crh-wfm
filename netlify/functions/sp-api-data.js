@@ -104,6 +104,52 @@ async function sbReadHistory(days) {
   return res.json();
 }
 
+// Read the full history (all days) for lifetime + month-over-month analysis.
+async function sbReadAllHistory() {
+  if (!SB_URL || !SB_KEY) return [];
+  const res = await fetch(`${SB_URL}/rest/v1/ledger_history?select=day,revenue,net,units,orders&order=day.asc`, {
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+// Lifetime totals + MoM net-profit trajectory from the daily history.
+function analyseHistory(all) {
+  if (!all || !all.length) return { lifetime: null, mom: null };
+  const lifetime = {
+    revenue: all.reduce((s, r) => s + (Number(r.revenue) || 0), 0),
+    net: all.reduce((s, r) => s + (Number(r.net) || 0), 0),
+    units: all.reduce((s, r) => s + (Number(r.units) || 0), 0),
+    orders: all.reduce((s, r) => s + (Number(r.orders) || 0), 0),
+    days: all.length,
+    since: all[0].day,
+  };
+  // Bucket net by YYYY-MM (only days with a real net contribute).
+  const months = {};
+  all.forEach(r => {
+    const m = String(r.day).slice(0, 7);
+    months[m] = months[m] || { month: m, revenue: 0, net: 0 };
+    months[m].revenue += Number(r.revenue) || 0;
+    months[m].net += Number(r.net) || 0;
+  });
+  const keys = Object.keys(months).sort();
+  const thisM = months[keys[keys.length - 1]] || null;
+  const lastM = months[keys[keys.length - 2]] || null;
+  let trajectory = 'none';
+  if (thisM && lastM) {
+    if (thisM.net >= 0 && thisM.net >= lastM.net) trajectory = 'green';   // profitable & growing
+    else if (thisM.net < 0 && thisM.net > lastM.net) trajectory = 'yellow'; // loss shrinking
+    else trajectory = 'red';                                               // loss expanding
+  } else if (thisM) {
+    trajectory = thisM.net >= 0 ? 'green' : 'yellow';
+  }
+  return {
+    lifetime,
+    mom: { thisMonth: thisM, lastMonth: lastM, trajectory, months: keys.length },
+  };
+}
+
 // Resolve a fetch but never throw — records the outcome in `diag` so the
 // dashboard can show exactly which endpoint answered and why one didn't.
 async function spFetchSafe(token, path, params, diag, label) {
@@ -245,10 +291,14 @@ exports.handler = async (event) => {
     // Persist today's snapshot and read back real history (best-effort — a
     // missing table or slow DB never breaks the dashboard).
     let history = [];
+    let lifetime = null, mom = null;
     try {
       const today = new Date().toISOString().slice(0, 10);
       await sbUpsertHistory({ day: today, revenue: Math.round(revenue), net: netProfit, units, orders: orders.length, margin });
       history = await sbReadHistory(30);
+      const analysis = analyseHistory(await sbReadAllHistory());
+      lifetime = analysis.lifetime;
+      mom = analysis.mom;
     } catch (histErr) {
       console.warn('[sp-api-data] history unavailable:', histErr.message);
     }
@@ -261,6 +311,8 @@ exports.handler = async (event) => {
         range,
         meta,
         sources,
+        lifetime,
+        mom,
         feesReal,
         costsSet,
         profitReal,
