@@ -1,586 +1,529 @@
 /* ============================================================================
-   AnoKar — دليل السيدان  |  print design system
-   A4 · RTL · four-colour segment coding · 12-column editorial grid
+   AnoKar · معركة المئة ألف — Issue 01
+   A4 print magazine. RTL. Front-of-book / feature well / buyer's guide.
+
+   Arabic typography rules observed throughout:
+     · letter-spacing is ZERO on Arabic — the script is connected, tracking it
+       breaks the letterforms. Only Latin small-caps labels are tracked.
+     · bold used sparingly in running Arabic text; weight carries headlines only
+     · no italics, no all-caps on Arabic
+     · everything mirrored: grid, folios, image side, rules
    ==========================================================================*/
 
-@font-face { font-family:"Plex AR"; src:url("fonts/IBMPlexSansArabic-Light.ttf"); font-weight:300 }
-@font-face { font-family:"Plex AR"; src:url("fonts/IBMPlexSansArabic-Regular.ttf"); font-weight:400 }
-@font-face { font-family:"Plex AR"; src:url("fonts/IBMPlexSansArabic-Medium.ttf"); font-weight:500 }
-@font-face { font-family:"Plex AR"; src:url("fonts/IBMPlexSansArabic-SemiBold.ttf"); font-weight:600 }
-@font-face { font-family:"Plex AR"; src:url("fonts/IBMPlexSansArabic-Bold.ttf"); font-weight:700 }
-@font-face { font-family:"Almarai","Plex AR"; src:url("fonts/Almarai-Regular.ttf"); font-weight:400 }
-@font-face { font-family:"Almarai","Plex AR"; src:url("fonts/Almarai-Bold.ttf"); font-weight:700 }
-@font-face { font-family:"Almarai","Plex AR"; src:url("fonts/Almarai-ExtraBold.ttf"); font-weight:800 }
-@font-face { font-family:"Plex Mono","Plex AR"; src:url("fonts/IBMPlexMono-Regular.ttf"); font-weight:400 }
-@font-face { font-family:"Plex Mono","Plex AR"; src:url("fonts/IBMPlexMono-Medium.ttf"); font-weight:500 }
-@font-face { font-family:"Plex Mono","Plex AR"; src:url("fonts/IBMPlexMono-Bold.ttf"); font-weight:700 }
-@font-face { font-family:"Plex Serif"; src:url("fonts/IBMPlexSerif-Regular.ttf"); font-weight:400 }
-@font-face { font-family:"Plex Serif"; src:url("fonts/IBMPlexSerif-Bold.ttf"); font-weight:700 }
-@font-face { font-family:"Plex Serif"; src:url("fonts/IBMPlexSerif-Italic.ttf"); font-style:italic }
+@font-face { font-family:"AR"; src:url("fonts/IBMPlexSansArabic-Light.ttf"); font-weight:300 }
+@font-face { font-family:"AR"; src:url("fonts/IBMPlexSansArabic-Regular.ttf"); font-weight:400 }
+@font-face { font-family:"AR"; src:url("fonts/IBMPlexSansArabic-Medium.ttf"); font-weight:500 }
+@font-face { font-family:"AR"; src:url("fonts/IBMPlexSansArabic-SemiBold.ttf"); font-weight:600 }
+@font-face { font-family:"AR"; src:url("fonts/IBMPlexSansArabic-Bold.ttf"); font-weight:700 }
+@font-face { font-family:"Display","AR"; src:url("fonts/Almarai-Regular.ttf"); font-weight:400 }
+@font-face { font-family:"Display","AR"; src:url("fonts/Almarai-Bold.ttf"); font-weight:700 }
+@font-face { font-family:"Display","AR"; src:url("fonts/Almarai-ExtraBold.ttf"); font-weight:800 }
+@font-face { font-family:"Mono","AR"; src:url("fonts/IBMPlexMono-Regular.ttf"); font-weight:400 }
+@font-face { font-family:"Mono","AR"; src:url("fonts/IBMPlexMono-Medium.ttf"); font-weight:500 }
+@font-face { font-family:"Mono","AR"; src:url("fonts/IBMPlexMono-Bold.ttf"); font-weight:700 }
+@font-face { font-family:"Serif"; src:url("fonts/IBMPlexSerif-Regular.ttf"); font-weight:400 }
+@font-face { font-family:"Serif"; src:url("fonts/IBMPlexSerif-Bold.ttf"); font-weight:700 }
 
 :root{
-  --paper:#F4F1EA;  --paper-2:#EAE5DA;  --ink:#15181C;  --ink-soft:#3A3F45;
-  --muted:#7A756C;  --rule:#D6CFC1;     --white:#FFFDF8;
-  --accent:#C3352A;                       /* AnoKar red */
-  --seg-entry:#B7472A; --seg-daily:#2C6A4F; --seg-family:#23486B; --seg-cap:#7A5B2E;
-  --page-w:210mm; --page-h:297mm; --m-out:16mm; --m-in:20mm; --m-top:15mm; --m-bot:17mm;
+  --ink:#101315; --ink-2:#1B2024; --paper:#F2EFE8; --paper-2:#E6E1D4; --white:#FDFBF6;
+  --body:#33383D; --muted:#7C766C; --rule:#D2CABB;
+  --red:#D5301F; --red-dk:#A62617;
+  --s-entry:#B8462B; --s-daily:#2B6B52; --s-family:#21456B; --s-cap:#7C5A2C;
+  --W:210mm; --H:297mm; --out:15mm; --gut:19mm; --top:14mm; --bot:16mm;
 }
 
 *{ box-sizing:border-box; margin:0; padding:0; -webkit-print-color-adjust:exact; print-color-adjust:exact }
 html{ font-size:10.5pt }
 body{
-  font-family:"Plex AR","Almarai",sans-serif; direction:rtl; color:var(--ink);
-  background:#8d8880; font-weight:300; text-rendering:geometricPrecision;
+  font-family:"AR",sans-serif; direction:rtl; color:var(--ink); background:#8a857e;
+  font-weight:300; letter-spacing:0; text-rendering:geometricPrecision;
 }
 @page{ size:A4; margin:0 }
 
-.page{
-  position:relative; width:var(--page-w); height:var(--page-h); overflow:hidden;
-  background:var(--paper); page-break-after:always; break-after:page; margin:0 auto;
-}
+.page{ position:relative; width:var(--W); height:var(--H); overflow:hidden;
+  background:var(--paper); page-break-after:always; break-after:page; margin:0 auto }
 .page:last-child{ page-break-after:auto }
-.page.dark{ background:var(--ink); color:var(--paper) }
+.page.ink{ background:var(--ink); color:var(--paper) }
 .page.tint{ background:var(--paper-2) }
+/* RTL binding: odd pages sit on the left of a spread, even pages on the right */
+.page.odd{ padding:var(--top) var(--out) var(--bot) var(--gut) }
+.page.even{ padding:var(--top) var(--gut) var(--bot) var(--out) }
+.page.odd .bleed{ margin-right:calc(-1 * var(--out)); margin-left:calc(-1 * var(--gut)) }
+.page.even .bleed{ margin-right:calc(-1 * var(--gut)); margin-left:calc(-1 * var(--out)) }
+.page.flush{ padding:0 }
 
-/* recto / verso gutters — the binding edge gets the wider margin */
-.page.recto{ padding:var(--m-top) var(--m-out) var(--m-bot) var(--m-in) }
-.page.verso{ padding:var(--m-top) var(--m-in) var(--m-bot) var(--m-out) }
-
-/* ---------- shared editorial furniture ---------------------------------- */
-.folio{
-  position:absolute; bottom:8mm; left:var(--m-out); right:var(--m-out);
+/* ---- furniture ---------------------------------------------------------- */
+.folio{ position:absolute; bottom:7.5mm; left:var(--out); right:var(--out);
   display:flex; justify-content:space-between; align-items:baseline;
-  font-family:"Plex AR",sans-serif; font-size:6.8pt; letter-spacing:.02em;
-  color:var(--muted); border-top:.3pt solid var(--rule); padding-top:2mm;
-}
-.folio .no{ font-family:"Plex Mono","Plex AR",monospace }
-.page.verso .folio{ flex-direction:row-reverse }
-.dark .folio{ color:#8b8579; border-color:#2c3037 }
-.folio .no{ font-weight:700; color:var(--ink); font-size:8pt }
-.dark .folio .no{ color:var(--paper) }
+  font-size:6.8pt; color:var(--muted); border-top:.3pt solid var(--rule); padding-top:2mm }
+.page.even .folio{ flex-direction:row-reverse }
+.folio b{ font-family:"Mono","AR"; font-weight:700; font-size:8pt; color:var(--ink) }
+.ink .folio{ color:#7d7770; border-color:#2a2f34 } .ink .folio b{ color:var(--paper) }
 
-.runhead{
-  display:flex; align-items:center; gap:3mm; font-size:7pt; letter-spacing:.14em;
-  font-weight:600; color:var(--muted); text-transform:uppercase;
-}
-.runhead::after{ content:""; flex:1; height:.3pt; background:var(--rule) }
-.runhead .dot{ width:2.6mm; height:2.6mm; background:var(--accent); border-radius:50% }
+.sec{ display:flex; align-items:center; gap:3mm; font-size:7.6pt; font-weight:600; color:var(--red) }
+.sec::after{ content:""; flex:1; height:.4pt; background:var(--rule) }
+.ink .sec::after{ background:#2a2f34 }
+.sec i{ font-style:normal; font-family:"Mono","AR"; font-size:7pt; color:var(--muted); letter-spacing:.06em }
 
-.kicker{ font-size:7.4pt; font-weight:600; letter-spacing:.16em; color:var(--accent) }
-.rule{ height:.4pt; background:var(--rule); border:0 }
-.rule.thick{ height:1.6pt; background:var(--ink) }
+h1,h2,h3,.disp{ font-family:"Display","AR",sans-serif; font-weight:800; line-height:1.14; letter-spacing:0 }
+.stand{ font-size:12.4pt; font-weight:300; line-height:1.72; color:var(--body) }
+.copy{ font-size:9.4pt; font-weight:300; line-height:1.88; color:var(--body) }
+.copy p + p{ margin-top:3.4mm }
+.en{ font-family:"Serif","AR",serif; direction:ltr; unicode-bidi:isolate; text-align:right }
+.mono{ font-family:"Mono","AR"; font-variant-numeric:tabular-nums }
+.tr{ letter-spacing:.16em }          /* Latin only */
+.cap{ font-size:7pt; color:var(--muted); line-height:1.5 }
+.rule-t{ border-top:1.6pt solid var(--ink) } .rule-h{ border-top:.3pt solid var(--rule) }
 
-h1,h2,h3{ font-family:"Almarai","Plex AR",sans-serif; font-weight:800; line-height:1.16; letter-spacing:-.01em }
-.lede{ font-size:11pt; font-weight:300; line-height:1.75; color:var(--ink-soft) }
-.body{ font-size:9.2pt; font-weight:300; line-height:1.85 }
-.en{ font-family:"Plex Serif","Plex AR",serif; direction:ltr; unicode-bidi:isolate }
-.num{ font-family:"Plex Mono","Plex AR",monospace; font-variant-numeric:tabular-nums }
-
-/* ---------- cover ------------------------------------------------------- */
+/* ---- cover -------------------------------------------------------------- */
 .cover{ background:var(--ink); color:var(--paper); padding:0 }
-.cover .top{ position:absolute; top:13mm; right:14mm; left:14mm; display:flex;
-  justify-content:space-between; align-items:flex-start }
-.wordmark{ font-family:"Plex Serif","Plex AR",serif; font-weight:700; letter-spacing:-.03em; line-height:.86 }
-.cover .wordmark{ font-size:47pt }
-.cover .wm-sub{ font-family:"Plex AR"; font-size:7.4pt; letter-spacing:.62em; font-weight:500;
-  color:#b8b1a4; margin-top:2mm; padding-right:.4mm }
-.cover .issue{ text-align:left; font-family:"Plex Mono","Plex AR",monospace; font-size:7.4pt;
-  line-height:1.9; color:#b8b1a4; letter-spacing:.04em }
-.cover .issue b{ display:block; font-size:20pt; color:var(--accent); letter-spacing:-.02em }
-.cover .band{ position:absolute; top:78mm; left:0; right:0; height:86mm; overflow:hidden }
-.cover .band img{ width:100%; height:100%; object-fit:cover; object-position:center 46% }
-.cover .band::after{ content:""; position:absolute; inset:0;
-  background:linear-gradient(90deg,rgba(21,24,28,.92) 0%,rgba(21,24,28,0) 42%,rgba(21,24,28,0) 62%,rgba(21,24,28,.86) 100%) }
-.cover .headline{ position:absolute; top:41mm; right:14mm; left:14mm }
-.cover .headline h1{ font-size:37pt; line-height:1.06; letter-spacing:-.02em }
-.cover .headline h1 em{ font-style:normal; color:var(--accent) }
-.cover .strap{ position:absolute; top:170mm; right:14mm; left:14mm; font-size:10pt;
-  font-weight:300; line-height:1.7; color:#cfc8ba; max-width:112mm }
-.cover .stats{ position:absolute; bottom:34mm; right:14mm; left:14mm; display:grid;
-  grid-template-columns:repeat(4,1fr); border-top:1pt solid #3a3f47; padding-top:5mm; gap:4mm }
-.cover .stats div{ border-right:.4pt solid #3a3f47; padding-right:4mm }
-.cover .stats div:first-child{ border-right:0; padding-right:0 }
-.cover .stats b{ display:block; font-family:"Plex Mono","Plex AR",monospace; font-size:19pt; font-weight:700;
-  letter-spacing:-.03em; line-height:1 }
-.cover .stats span{ display:block; font-size:7.2pt; color:#a8a196; margin-top:2mm; letter-spacing:.04em }
-.cover .footline{ position:absolute; bottom:13mm; right:14mm; left:14mm; display:flex;
-  justify-content:space-between; font-family:"Plex Mono","Plex AR",monospace; font-size:7pt; color:#8d8579;
-  border-top:.4pt solid #3a3f47; padding-top:3mm }
-.cover .coverlines{ position:absolute; top:186mm; right:14mm; width:104mm }
-.cover .coverlines li{ list-style:none; padding:2.6mm 0; border-top:.4pt solid #3a3f47;
-  display:flex; justify-content:space-between; gap:4mm; font-size:8.4pt; color:#e6e0d4 }
-.cover .coverlines li span{ font-family:"Plex Mono","Plex AR",monospace; color:var(--accent); font-size:7.6pt }
-.cover .flag{ position:absolute; top:78mm; right:0; background:var(--accent); color:#fff;
-  font-size:8pt; font-weight:600; letter-spacing:.06em; padding:2.4mm 6mm 2.6mm }
+.cover .shot{ position:absolute; top:0; right:0; left:0; height:172mm; overflow:hidden }
+.cover .shot img{ width:100%; height:100%; object-fit:cover; object-position:50% 44% }
+.cover .shot::after{ content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg,rgba(16,19,21,.78) 0,rgba(16,19,21,.12) 30%,
+    rgba(16,19,21,.05) 55%,rgba(16,19,21,.95) 100%) }
+.cover .mast{ position:absolute; top:11mm; right:13mm; left:13mm; z-index:2 }
+.cover .mast .name{ font-family:"Serif","AR",serif; font-weight:700; font-size:62pt; line-height:.82;
+  letter-spacing:-.035em; color:#fff }
+.cover .mast .sub{ display:flex; justify-content:space-between; align-items:baseline;
+  margin-top:3.5mm; border-top:1.4pt solid rgba(255,255,255,.5); padding-top:2.2mm }
+.cover .mast .sub span{ font-size:7.4pt; color:#e6e0d4 }
+.cover .mast .sub .lat{ font-family:"Mono","AR"; font-size:7pt; letter-spacing:.16em; color:#cbc4b7 }
+.cover .flash{ position:absolute; top:52mm; left:13mm; z-index:3; background:var(--red); color:#fff;
+  text-align:center; padding:4mm 5mm; transform:rotate(-4deg) }
+.cover .flash b{ display:block; font-family:"Mono","AR"; font-size:21pt; font-weight:700; line-height:1 }
+.cover .flash span{ display:block; font-size:7.4pt; margin-top:1.2mm }
+.cover .head{ position:absolute; top:118mm; right:13mm; left:13mm; z-index:2 }
+.cover .head .kick{ font-size:8.4pt; color:#fff; background:var(--red); display:inline-block;
+  padding:1.4mm 3.5mm; margin-bottom:3.5mm }
+.cover .head h1{ font-size:52pt; line-height:1.02; color:#fff }
+.cover .head p{ font-size:11pt; color:#ddd6c8; margin-top:4mm; max-width:130mm; line-height:1.6 }
+.cover .lines{ position:absolute; top:196mm; right:13mm; left:13mm; z-index:2 }
+.cover .lines li{ list-style:none; display:grid; grid-template-columns:1fr auto; gap:5mm;
+  padding:3.1mm 0; border-top:.4pt solid rgba(255,255,255,.22); align-items:baseline }
+.cover .lines li:first-child{ border-top:1.2pt solid rgba(255,255,255,.5) }
+.cover .lines b{ font-size:10pt; font-weight:600; color:#fff }
+.cover .lines em{ font-style:normal; font-size:8.4pt; color:#b7b0a4; display:block; margin-top:.8mm }
+.cover .lines .pg{ font-family:"Mono","AR"; font-size:8pt; color:var(--red) }
+.cover .foot{ position:absolute; bottom:10mm; right:13mm; left:13mm; z-index:2; display:flex;
+  justify-content:space-between; font-family:"Mono","AR"; font-size:7pt; color:#8e887f;
+  border-top:.4pt solid rgba(255,255,255,.22); padding-top:2.6mm }
 
-/* ---------- generic section opener -------------------------------------- */
-.opener{ display:flex; flex-direction:column; justify-content:space-between }
-.opener .big{ font-size:52pt; line-height:.98; letter-spacing:-.025em }
-.opener .bignum{ font-family:"Plex Mono","Plex AR",monospace; font-size:120pt; font-weight:700;
-  line-height:.8; color:var(--accent); letter-spacing:-.06em }
-.opener .band{ height:64mm; margin:8mm -30mm 0; overflow:hidden }
-.opener .band img{ width:100%; height:100%; object-fit:cover }
+/* ---- contents ----------------------------------------------------------- */
+.toc h1{ font-size:30pt } 
+.toc .big{ display:grid; grid-template-columns:1fr 1fr; gap:5mm; margin:6mm 0 }
+.toc .big figure{ position:relative; height:44mm; overflow:hidden; background:var(--ink) }
+.toc .big img{ width:100%; height:100%; object-fit:cover }
+.toc .big figcaption{ position:absolute; inset:auto 0 0 0; padding:2.4mm 3mm;
+  background:linear-gradient(0deg,rgba(16,19,21,.92),rgba(16,19,21,0)); color:#fff }
+.toc .big .t{ font-size:9pt; font-weight:600 }
+.toc .big .p{ font-family:"Mono","AR"; font-size:7.4pt; color:#f0b8ac }
+.toc-block{ margin-top:5mm }
+.toc-block h4{ font-family:"Display","AR"; font-size:10pt; font-weight:800; color:var(--red);
+  border-bottom:1.4pt solid var(--ink); padding-bottom:1.6mm; margin-bottom:2mm }
+.toc-row{ display:grid; grid-template-columns:10mm 1fr auto; gap:3mm; align-items:baseline;
+  padding:2.1mm 0; border-bottom:.3pt solid var(--rule) }
+.toc-row .n{ font-family:"Mono","AR"; font-size:8.2pt; font-weight:700; color:var(--red) }
+.toc-row .t{ font-size:8.8pt; font-weight:400 }
+.toc-row .d{ font-size:7.4pt; color:var(--muted) }
 
-/* ---------- masthead / imprint ------------------------------------------ */
-.imprint .grid{ display:grid; grid-template-columns:1fr 1fr; gap:7mm 10mm; margin-top:9mm }
-.imprint .cell{ border-top:1.2pt solid var(--ink); padding-top:3mm }
-.imprint .cell dt{ font-size:7.2pt; letter-spacing:.12em; color:var(--muted); font-weight:600 }
-.imprint .cell dd{ font-family:"Plex Mono","Plex AR",monospace; font-size:12pt; margin-top:2mm; font-weight:500 }
-.imprint .cell p{ font-size:8.4pt; line-height:1.7; margin-top:2mm; color:var(--ink-soft) }
-.note{ font-size:8pt; line-height:1.75; color:var(--muted); border-right:2pt solid var(--accent);
-  padding-right:4mm }
-
-/* ---------- editor's letter --------------------------------------------- */
-.letter h1{ font-size:30pt; margin:4mm 0 6mm; max-width:130mm }
-.letter .intro{ font-size:12.4pt; font-weight:400; line-height:1.7; color:var(--ink);
-  border-bottom:.4pt solid var(--rule); padding-bottom:6mm; margin-bottom:6mm }
+/* ---- editor / methodology ---------------------------------------------- */
+.letter h1{ font-size:32pt; margin:5mm 0 4mm; max-width:135mm }
+.letter .open{ font-size:13pt; font-weight:400; line-height:1.66; color:var(--ink);
+  border-bottom:.4pt solid var(--rule); padding-bottom:5mm; margin-bottom:5mm }
 .letter .cols{ column-count:2; column-gap:9mm; column-rule:.3pt solid var(--rule) }
-.letter .cols h3{ font-family:"Plex AR"; font-size:9.4pt; font-weight:600; margin:0 0 1.5mm;
-  color:var(--accent); break-after:avoid }
-.letter .cols p{ font-size:8.9pt; line-height:1.8; font-weight:300; margin-bottom:5mm;
-  break-inside:avoid; color:var(--ink-soft) }
-.sign{ margin-top:7mm; display:flex; align-items:baseline; gap:4mm; font-size:8.4pt; color:var(--muted) }
-.sign b{ font-family:"Almarai","Plex AR",sans-serif; font-weight:700; font-size:10.5pt;
-  color:var(--ink) }
+.letter .cols p{ font-size:9.4pt; line-height:1.88; color:var(--body); margin-bottom:4mm;
+  break-inside:avoid }
+.sign{ margin-top:6mm; padding-top:3mm; border-top:1.4pt solid var(--ink); display:flex;
+  justify-content:space-between; align-items:baseline; font-size:8.4pt; color:var(--muted) }
+.sign b{ font-family:"Display","AR"; font-weight:800; font-size:11pt; color:var(--ink) }
+.rulebox{ background:var(--paper-2); padding:6mm 6.5mm; margin-top:6mm }
+.rulebox h4{ font-family:"Display","AR"; font-weight:800; font-size:10.5pt; margin-bottom:3mm }
+.rulebox .item{ display:grid; grid-template-columns:8mm 1fr; gap:3mm; padding:2.6mm 0;
+  border-top:.3pt solid var(--rule) }
+.rulebox .item:first-of-type{ border-top:0 }
+.rulebox .item b{ font-family:"Mono","AR"; font-size:9pt; color:var(--red) }
+.rulebox .item h5{ font-size:9pt; font-weight:600; margin-bottom:1mm }
+.rulebox .item p{ font-size:8.2pt; line-height:1.7; color:var(--body) }
 
-/* ---------- contents ---------------------------------------------------- */
-.toc h1{ font-size:34pt; margin-bottom:2mm }
-.toc .sub{ font-size:9pt; color:var(--muted); margin-bottom:7mm }
-.toc-row{ display:grid; grid-template-columns:11mm 1fr auto; gap:4mm; align-items:baseline;
-  padding:2.15mm 0; border-bottom:.3pt solid var(--rule) }
-.toc-row .p{ font-family:"Plex Mono","Plex AR",monospace; font-size:8.4pt; color:var(--accent); font-weight:700 }
-.toc-row .t{ font-size:8.6pt; font-weight:400 }
-.toc-row .t .en{ font-size:7.8pt; color:var(--muted); margin-right:2mm }
-.toc-row .r{ font-size:7.6pt; color:var(--muted) }
-.toc-head{ display:grid; grid-template-columns:11mm 1fr auto; gap:4mm; font-size:6.8pt;
-  letter-spacing:.1em; color:var(--muted); border-bottom:1.2pt solid var(--ink);
-  padding-bottom:1.6mm; margin-bottom:1mm; font-weight:600 }
-.toc-sec{ margin-top:4mm; font-family:"Almarai","Plex AR"; font-weight:800; font-size:10.5pt;
-  display:flex; align-items:center; gap:3mm }
-.toc-sec::after{ content:""; flex:1; height:.3pt; background:var(--rule) }
-.toc-feat{ display:grid; grid-template-columns:repeat(2,1fr); gap:5mm; margin:6mm 0 }
-.toc-feat figure{ position:relative; overflow:hidden; height:29mm; background:var(--ink) }
-.toc-feat img{ width:100%; height:100%; object-fit:cover }
-.toc-feat figcaption{ position:absolute; inset:auto 0 0 0; background:rgba(21,24,28,.82);
-  color:var(--paper); font-size:7.4pt; padding:1.8mm 3mm; display:flex; justify-content:space-between }
-.toc-feat figcaption b{ font-family:"Plex Mono","Plex AR",monospace; color:#f0c46a }
+/* ---- radar (front of book) --------------------------------------------- */
+.radar h1{ font-size:30pt; margin:3mm 0 2mm }
+.radar .grid{ display:grid; grid-template-columns:1fr 1fr; gap:5mm 7mm; margin-top:5mm }
+.item{ break-inside:avoid }
+.item .lab{ font-size:7.2pt; font-weight:600; color:var(--red); margin-bottom:1.4mm }
+.item h3{ font-family:"Display","AR"; font-size:12pt; font-weight:800; line-height:1.3; margin-bottom:1.6mm }
+.item p{ font-size:8.2pt; line-height:1.72; color:var(--body) }
+.item .num{ font-family:"Mono","AR"; font-size:26pt; font-weight:700; line-height:1;
+  letter-spacing:-.03em; color:var(--ink); display:block; margin-bottom:1.5mm }
+.item figure{ height:26mm; overflow:hidden; margin-bottom:2.4mm; background:var(--ink) }
+.item figure img{ width:100%; height:100%; object-fit:cover }
+.item.wide{ grid-column:1 / -1 }
+.item.dark{ background:var(--ink); color:var(--paper); padding:5mm }
+.item.dark h3{ color:#fff } .item.dark p{ color:#c6bfb3 } .item.dark .num{ color:var(--red) }
+.item.dark .lab{ color:#f0b8ac }
 
-/* ---------- data / charts ----------------------------------------------- */
-.data h1{ font-size:29pt; margin:3mm 0 4mm }
-.chart{ margin-top:6mm }
-.chart .cap{ font-size:7.4pt; color:var(--muted); line-height:1.6; margin-top:3mm;
-  border-top:.3pt solid var(--rule); padding-top:2mm }
-.chart .cap b{ font-family:"Plex AR",sans-serif; color:var(--accent); font-weight:600 }
-.chart h3{ font-family:"Plex AR"; font-size:9.6pt; font-weight:600; margin-bottom:4mm }
-.bar{ display:grid; grid-template-columns:26mm 1fr 13mm; align-items:center; gap:3mm;
-  margin-bottom:2.6mm; font-size:8.2pt }
-.bar .track{ height:6.4mm; background:var(--paper-2) }
-.bar .fill{ height:100%; background:var(--ink) }
-.bar .v{ font-family:"Plex Mono","Plex AR",monospace; font-size:9pt; font-weight:700; text-align:left }
-.bar.a1 .fill{ background:var(--accent) } .bar.a2 .fill{ background:#2C6A4F }
-.bar.a3 .fill{ background:#23486B } .bar.a4 .fill{ background:#7A5B2E }
-.hist{ display:grid; grid-template-columns:repeat(7,1fr); gap:2.6mm; align-items:end; height:46mm }
-.hist .col{ display:flex; flex-direction:column; justify-content:flex-end; height:100% }
-.hist .b{ background:var(--ink); position:relative }
-.hist .b.hot{ background:var(--accent) }
-.hist .n{ font-family:"Plex Mono","Plex AR",monospace; font-size:8.4pt; font-weight:700; text-align:center;
-  margin-bottom:1.4mm }
-.hist .x{ font-family:"Plex Mono","Plex AR",monospace; font-size:6.6pt; color:var(--muted); text-align:center;
-  margin-top:1.8mm; border-top:.3pt solid var(--rule); padding-top:1.4mm }
-.scatter{ position:relative; height:74mm; border-right:.5pt solid var(--ink);
-  border-bottom:.5pt solid var(--ink) }
-.scatter .pt{ position:absolute; width:2.1mm; height:2.1mm; border-radius:50%; transform:translate(50%,50%) }
-.scatter .lbl{ position:absolute; font-family:"Plex Mono","Plex AR",monospace; font-size:6.2pt;
-  color:var(--ink); white-space:nowrap; transform:translate(50%,50%) }
-.scatter .ax{ position:absolute; font-family:"Plex Mono","Plex AR",monospace; font-size:6.4pt; color:var(--muted) }
-.keyfacts{ display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:1.4pt solid var(--ink);
-  margin-top:6mm }
-.keyfacts div{ padding:4mm 4mm 0 0; border-left:.3pt solid var(--rule) }
-.keyfacts div:last-child{ border-left:0 }
-.keyfacts b{ font-family:"Plex Mono","Plex AR",monospace; font-size:17pt; font-weight:700; letter-spacing:-.02em }
-.keyfacts span{ display:block; font-size:7.4pt; color:var(--muted); line-height:1.55; margin-top:1.5mm }
+/* ---- feature opener ----------------------------------------------------- */
+.opener{ padding:0; background:var(--ink); color:var(--paper) }
+.opener .shot{ position:absolute; inset:0 }
+.opener .shot img{ width:100%; height:100%; object-fit:cover; object-position:50% 46% }
+.opener .shot::after{ content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg,rgba(16,19,21,.5) 0,rgba(16,19,21,.1) 34%,rgba(16,19,21,.96) 82%) }
+.opener .txt{ position:absolute; right:15mm; left:15mm; top:104mm; bottom:14mm; z-index:2;
+  display:flex; flex-direction:column }
+.opener .txt .kick{ display:inline-block; background:var(--red); color:#fff; font-size:8pt;
+  padding:1.4mm 3.4mm; margin-bottom:4mm }
+.opener .txt h1{ font-size:52pt; line-height:1; color:#fff }
+.opener .txt p{ font-size:12pt; line-height:1.66; color:#d8d1c4; max-width:132mm; margin-top:5mm }
+.opener .credit{ position:absolute; bottom:6mm; left:15mm; font-size:6.2pt; color:#8e887f; z-index:2 }
 
-/* ---------- anatomy page ------------------------------------------------ */
-.anatomy .legend{ display:grid; grid-template-columns:repeat(4,1fr); gap:5mm; margin-top:7mm }
-.anatomy .legend div{ border-top:2.2pt solid; padding-top:2.4mm; font-size:7.6pt }
-.anatomy .legend b{ display:block; font-size:8.6pt; font-weight:600; margin-bottom:1mm }
+/* ---- feature text page -------------------------------------------------- */
+.feat h1{ font-size:30pt; margin:4mm 0 3mm }
+.feat .cols{ column-count:2; column-gap:8mm; margin-top:5mm }
+.feat .cols p{ font-size:9.4pt; line-height:1.88; color:var(--body); margin-bottom:4mm; break-inside:avoid }
+.pull{ margin:6mm 0; padding:5mm 0; border-top:1.6pt solid var(--ink); border-bottom:1.6pt solid var(--ink) }
+.pull p{ font-family:"Display","AR"; font-weight:800; font-size:16pt; line-height:1.45 }
+.pull span{ display:block; font-family:"AR"; font-weight:300; font-size:8pt; color:var(--muted);
+  margin-top:2.4mm }
+.sidebar{ background:var(--ink); color:var(--paper); padding:6mm }
+.sidebar h4{ font-family:"Display","AR"; font-weight:800; font-size:11pt; color:#fff; margin-bottom:3mm }
+.sidebar p{ font-size:8.4pt; line-height:1.75; color:#c6bfb3 }
+.sidebar .row{ display:flex; justify-content:space-between; padding:2mm 0;
+  border-top:.3pt solid #2a2f34; font-size:8.2pt; color:#c6bfb3 }
+.sidebar .row b{ font-family:"Mono","AR"; color:#fff }
 
-/* ---------- car profile pages ------------------------------------------- */
-.car{ --seg:var(--accent) }
-.car.entry{ --seg:var(--seg-entry) } .car.daily{ --seg:var(--seg-daily) }
-.car.family{ --seg:var(--seg-family) } .car.cap{ --seg:var(--seg-cap) }
+/* ---- road test spread --------------------------------------------------- */
+.rt-photo{ padding:0; background:var(--ink); color:var(--paper) }
+.rt-photo .shot{ position:absolute; top:0; right:0; left:0; height:166mm; overflow:hidden }
+.rt-photo .shot img{ width:100%; height:100%; object-fit:cover }
+.rt-photo .shot::after{ content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg,rgba(16,19,21,.32),rgba(16,19,21,0) 40%,rgba(16,19,21,.72)) }
+.rt-photo .badge{ position:absolute; top:0; right:0; z-index:3; background:var(--red); color:#fff;
+  padding:3mm 5mm; font-size:8pt; font-weight:600 }
+.rt-photo .body{ position:absolute; top:166mm; right:0; left:0; bottom:0; padding:8mm 15mm 17mm;
+  display:flex; flex-direction:column }
+.rt-photo .rank{ font-family:"Mono","AR"; font-size:7.4pt; color:#8e887f; letter-spacing:.1em }
+.rt-photo h1{ font-size:34pt; line-height:1.04; color:#fff; margin:3mm 0 2mm }
+.rt-photo .en{ font-size:12pt; color:#a49d92 }
+.rt-photo .score{ position:absolute; top:166mm; left:15mm; transform:translateY(-50%); z-index:4;
+  background:var(--red); color:#fff; width:30mm; height:30mm; display:flex; flex-direction:column;
+  align-items:center; justify-content:center }
+.rt-photo .score b{ font-family:"Mono","AR"; font-size:22pt; font-weight:700; line-height:1 }
+.rt-photo .score span{ font-size:6.4pt; margin-top:1mm }
+.rt-photo .quote{ margin-top:6mm; padding-top:4mm; border-top:.4pt solid #2a2f34;
+  font-size:11pt; line-height:1.6; color:#d8d1c4; max-width:140mm }
+.rt-photo .gallery{ position:absolute; bottom:16mm; left:15mm; display:flex; gap:3mm }
+.rt-photo .gallery figure{ width:26mm; height:17mm; overflow:hidden }
+.rt-photo .gallery img{ width:100%; height:100%; object-fit:cover }
 
-.car .head{ display:flex; align-items:center; gap:3mm; font-size:7pt; letter-spacing:.12em;
-  font-weight:600; color:var(--muted) }
-.car .head .seg{ background:var(--seg); color:#fff; padding:1.1mm 3mm; letter-spacing:.06em }
-.car .head .rk{ font-family:"Plex Mono","Plex AR",monospace; color:var(--ink); font-weight:700; letter-spacing:0 }
-.car .head::after{ content:""; flex:1; height:.3pt; background:var(--rule) }
+.rt-text .head{ display:flex; justify-content:space-between; align-items:flex-end; gap:6mm;
+  border-bottom:1.6pt solid var(--ink); padding-bottom:3mm }
+.rt-text .head h2{ font-size:20pt } .rt-text .head .en{ font-size:9.4pt; color:var(--muted) }
+.rt-text .lede{ font-size:11pt; line-height:1.7; color:var(--ink); margin:5mm 0 }
+.rt-text .cols{ column-count:2; column-gap:8mm }
+.rt-text .cols p{ font-size:9.2pt; line-height:1.86; color:var(--body); margin-bottom:3.6mm;
+  break-inside:avoid }
+.verdict-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6mm; margin-top:6mm }
+.vcol h4{ font-size:8.4pt; font-weight:600; padding-bottom:1.6mm; margin-bottom:2.4mm;
+  border-bottom:1.2pt solid var(--ink); display:flex; align-items:center; gap:2mm }
+.vcol h4 i{ font-style:normal; font-family:"Mono","AR"; color:var(--red) }
+.vcol li{ list-style:none; font-size:8.6pt; line-height:1.66; color:var(--body); margin-bottom:2.4mm;
+  padding-right:4mm; position:relative }
+.vcol li::before{ content:""; position:absolute; right:0; top:2.2mm; width:1.7mm; height:1.7mm;
+  background:var(--red) }
+.vcol.no li::before{ background:var(--muted) }
+.spec-table{ margin-top:6mm; border-top:1.6pt solid var(--ink) }
+.spec-table .r{ display:grid; grid-template-columns:1fr auto; padding:1.9mm 0;
+  border-bottom:.3pt solid var(--rule); font-size:8.4pt; align-items:baseline }
+.spec-table .r b{ font-family:"Mono","AR"; font-size:9pt; font-weight:500 }
+.spec-table .r b u{ text-decoration:none; font-family:"AR"; font-size:7pt; color:var(--muted);
+  margin-right:1.2mm }
+.verdict-box{ margin-top:6mm; background:var(--ink); color:var(--paper); padding:6mm }
+.verdict-box h4{ font-family:"Display","AR"; font-weight:800; font-size:11pt; color:#fff; margin-bottom:2.6mm }
+.verdict-box p{ font-size:9.6pt; line-height:1.75; color:#d8d1c4 }
+.verdict-box .fit{ margin-top:3.4mm; padding-top:2.6mm; border-top:.3pt solid #2a2f34;
+  font-size:8.2pt; color:#a49d92 }
+.verdict-box .fit b{ color:#fff; font-weight:600 }
 
-.car .title{ margin-top:4mm; display:flex; justify-content:space-between; align-items:flex-end; gap:6mm }
-.car .title h1{ font-size:26pt; line-height:1.1 }
-.car .title .en{ font-size:10.4pt; color:var(--muted); margin-top:1.5mm; letter-spacing:.01em }
-.car .score{ text-align:center; flex:none; width:26mm }
-.car .score b{ display:block; font-family:"Plex Mono","Plex AR",monospace; font-size:26pt; font-weight:700;
-  line-height:.95; letter-spacing:-.03em; color:var(--seg) }
-.car .score span{ display:block; font-size:6.6pt; letter-spacing:.1em; color:var(--muted); margin-top:1.4mm }
-.car .score.unrated b{ font-size:12pt; letter-spacing:0; color:var(--muted) }
+/* ---- head to head ------------------------------------------------------- */
+.h2h .cars{ display:grid; grid-template-columns:1fr 1fr; gap:6mm; margin-top:5mm }
+.h2h .car figure{ height:40mm; overflow:hidden; background:var(--ink) }
+.h2h .car img{ width:100%; height:100%; object-fit:cover }
+.h2h .car h3{ font-family:"Display","AR"; font-weight:800; font-size:15pt; margin-top:3mm }
+.h2h .car .en{ font-size:8.6pt; color:var(--muted) }
+.h2h .versus{ text-align:center; font-family:"Display","AR"; font-weight:800; font-size:13pt;
+  color:var(--red); margin:4mm 0 }
+.h2h table{ width:100%; border-collapse:collapse; margin-top:5mm }
+.h2h th{ font-size:7.2pt; color:var(--muted); font-weight:600; padding-bottom:1.6mm;
+  border-bottom:1.4pt solid var(--ink) }
+.h2h td{ font-size:8.6pt; padding:2.3mm 0; border-bottom:.3pt solid var(--rule); text-align:center }
+.h2h td.k{ text-align:right; color:var(--muted); font-size:8pt }
+.h2h td.v{ font-family:"Mono","AR"; font-size:9.2pt }
+.h2h td.win{ font-weight:700; color:var(--red) }
 
-.photo{ position:relative; overflow:hidden; background:var(--ink) }
-.photo img{ width:100%; height:100%; object-fit:cover }
-.photo .credit{ position:absolute; bottom:0; right:0; background:rgba(21,24,28,.74); color:#e9e3d7;
-  font-size:6pt; padding:1.2mm 3mm; letter-spacing:.02em }
-.photo .tag{ position:absolute; top:0; right:0; background:var(--seg); color:#fff; font-size:7pt;
-  font-weight:600; padding:1.4mm 4mm; letter-spacing:.05em }
-
-.pricebar{ display:grid; grid-template-columns:1.35fr 1fr 1fr; border-top:1.6pt solid var(--ink);
-  border-bottom:.4pt solid var(--rule) }
-.pricebar div{ padding:3.2mm 4mm 3.4mm 0; border-left:.3pt solid var(--rule) }
-.pricebar div:last-child{ border-left:0 }
-.pricebar dt{ font-size:6.8pt; letter-spacing:.1em; color:var(--muted); font-weight:600 }
-.pricebar dd{ font-family:"Plex Mono","Plex AR",monospace; font-size:13pt; font-weight:700; margin-top:1.6mm;
-  letter-spacing:-.02em }
-.pricebar dd small{ font-family:"Plex AR"; font-size:7.4pt; font-weight:400; color:var(--muted);
-  margin-right:1.5mm; letter-spacing:0 }
-.pricebar .alt dd{ font-size:10.5pt; font-weight:500; color:var(--ink-soft) }
-
-.specs{ display:grid; grid-template-columns:repeat(4,1fr); border-top:.4pt solid var(--rule) }
-.specs .s{ padding:3mm 3.4mm 3.2mm 0; border-left:.3pt solid var(--rule);
+/* ---- buyer's guide (back of book) -------------------------------------- */
+/* Two cars a page. The photo runs full bleed at the source images' own wide
+   ratio, so the whole car shows instead of a cropped detail. */
+.page.guide{ display:flex; flex-direction:column }
+.bg-entry{ display:flex; flex-direction:column; flex:1 1 0; min-height:0 }
+.bg-entry + .bg-entry{ margin-top:4mm; padding-top:4mm; border-top:.4pt solid var(--rule) }
+.bg-entry .ph{ position:relative; height:56mm; overflow:hidden; background:var(--ink); flex:none }
+.bg-entry .ph img{ width:100%; height:100%; object-fit:cover }
+.bg-entry .ph .tag{ position:absolute; top:0; right:0; background:var(--seg,var(--red)); color:#fff;
+  font-size:6.8pt; padding:1.4mm 4mm }
+.bg-entry .ph .cr{ position:absolute; bottom:0; left:0; background:rgba(16,19,21,.72);
+  color:#ded7ca; font-size:5.6pt; padding:1mm 2.4mm }
+.bg-entry .txt{ flex:1; display:flex; flex-direction:column; padding-top:3.2mm }
+.bg-entry .hd{ display:grid; grid-template-columns:1fr auto auto; gap:6mm; align-items:flex-end;
+  border-bottom:1.6pt solid var(--ink); padding-bottom:2.2mm }
+.bg-entry .hd h3{ font-family:"Display","AR"; font-weight:800; font-size:15pt; line-height:1.18 }
+.bg-entry .hd .en{ font-size:8.4pt; color:var(--muted); display:block; margin-top:1mm }
+.bg-entry .hd .price{ text-align:left }
+.bg-entry .hd .price b{ font-family:"Mono","AR"; font-size:12.5pt; font-weight:700; display:block }
+.bg-entry .hd .price span{ display:block; font-size:7pt; color:var(--muted); margin-top:.8mm }
+.bg-entry .hd .price .upd{ font-size:6.6pt; margin-top:.5mm }
+.bg-entry .hd .sc{ text-align:center; min-width:16mm }
+.bg-entry .hd .sc b{ font-family:"Mono","AR"; font-size:19pt; font-weight:700; color:var(--seg,var(--red));
+  line-height:1; display:block }
+.bg-entry .hd .sc span{ display:block; font-size:6pt; color:var(--muted); margin-top:.9mm }
+.bg-entry .specs{ display:grid; grid-template-columns:repeat(8,1fr); gap:3mm; padding:2.6mm 0;
   border-bottom:.3pt solid var(--rule) }
-.specs .s:nth-child(4n){ border-left:0 }
-.specs .s:nth-last-child(-n+4){ border-bottom:0 }
-.specs dt{ font-size:6.8pt; color:var(--muted); letter-spacing:.04em }
-.specs dd{ font-family:"Plex Mono","Plex AR",monospace; font-size:10.4pt; font-weight:500; margin-top:1.4mm;
-  line-height:1.25; letter-spacing:-.01em }
-.specs dd.ar{ font-family:"Plex AR"; font-size:8.4pt; font-weight:400 }
-.specs dd u{ text-decoration:none; font-family:"Plex AR"; font-size:6.8pt; color:var(--muted);
-  margin-right:1mm }
+.bg-entry .specs div{ font-size:6.6pt; color:var(--muted); line-height:1.3 }
+.bg-entry .specs b{ display:block; font-family:"Mono","AR"; font-size:8.4pt; color:var(--ink);
+  font-weight:500; margin-top:.7mm; line-height:1.25 }
+.bg-entry .specs b.ar{ font-family:"AR"; font-size:7.2pt; font-weight:400 }
+.bg-entry .lower{ display:grid; grid-template-columns:1.4fr 1fr; gap:7mm; margin-top:2.8mm; flex:1 }
+.bg-entry .say{ font-size:8.6pt; line-height:1.72; color:var(--body) }
+.bg-entry .say b{ color:var(--ink); font-weight:600 }
+.bg-entry .alt{ margin-top:2.4mm; padding-top:1.8mm; border-top:.3pt solid var(--rule);
+  font-size:7pt; color:var(--muted) }
+.bg-entry .alt b{ font-family:"Serif"; direction:ltr; unicode-bidi:isolate; color:var(--ink) }
+.bg-entry .pn div{ font-size:7.8pt; line-height:1.62; color:var(--body); padding-right:4mm;
+  position:relative; margin-bottom:2.2mm }
+.bg-entry .pn div::before{ content:""; position:absolute; right:0; top:1.9mm; width:1.5mm;
+  height:1.5mm; background:var(--seg,var(--red)) }
+.bg-entry .pn div.no::before{ background:var(--muted) }
 
-.twocol{ display:grid; grid-template-columns:1fr 1fr; gap:7mm }
-.plist h4{ font-size:8pt; font-weight:600; letter-spacing:.04em; margin-bottom:2.4mm;
-  padding-bottom:1.4mm; border-bottom:1.2pt solid var(--ink); display:flex; gap:2mm; align-items:center }
-.plist h4 i{ font-style:normal; color:var(--seg); font-family:"Plex Mono","Plex AR"; font-size:7.4pt }
-.plist li{ list-style:none; font-size:8.4pt; line-height:1.6; font-weight:300; margin-bottom:2.2mm;
-  padding-right:4mm; position:relative; color:var(--ink-soft) }
-.plist li::before{ content:""; position:absolute; right:0; top:2.1mm; width:1.6mm; height:1.6mm;
-  background:var(--seg) }
-.plist.warn li::before{ background:var(--muted) }
-
-.verdict{ background:var(--paper-2); padding:5mm 5.5mm; position:relative }
-.verdict.dark{ background:var(--ink); color:var(--paper) }
-.verdict h4{ font-size:7.4pt; letter-spacing:.14em; color:var(--seg); font-weight:600; margin-bottom:2.6mm }
-.verdict p{ font-size:10.2pt; line-height:1.72; font-weight:300 }
-.verdict.dark p{ color:#ded7c9 }
-.verdict .fit{ margin-top:3.4mm; padding-top:2.6mm; border-top:.4pt solid var(--rule);
-  font-size:8pt; color:var(--muted) }
-.verdict .fit b{ color:var(--ink); font-weight:600 }
-.verdict.dark .fit{ border-color:#343941; color:#9b9488 } .verdict.dark .fit b{ color:var(--paper) }
-
-.meter{ margin-top:5mm }
-.meter .lbl{ display:flex; justify-content:space-between; font-size:6.8pt; color:var(--muted);
-  letter-spacing:.06em; margin-bottom:2mm; font-weight:600 }
-.meter .track{ position:relative; height:3.4mm; background:var(--paper-2) }
-.meter .span{ position:absolute; top:0; bottom:0; background:var(--seg) }
-.meter .ticks{ display:flex; justify-content:space-between; font-family:"Plex Mono","Plex AR",monospace;
-  font-size:6.2pt; color:var(--muted); margin-top:1.4mm }
-
-.nextup{ margin-top:5mm; border-top:1.2pt solid var(--ink); padding-top:3mm }
-.nextup h4{ font-size:7.2pt; letter-spacing:.12em; color:var(--muted); font-weight:600; margin-bottom:2.6mm }
-.nextup .row{ display:grid; grid-template-columns:repeat(3,1fr); gap:4mm }
-.nextup .row > div{ border-right:2pt solid var(--seg); padding-right:2.6mm }
-.nextup .n{ font-family:"Plex Serif","Plex AR",serif; font-size:8.2pt; direction:ltr; text-align:right;
-  line-height:1.3; height:8mm }
-.nextup .pz{ font-family:"Plex Mono","Plex AR",monospace; font-size:8.6pt; font-weight:700; margin-top:1mm }
-
-/* hero variant — feature opener for the five highest-rated cars */
-.page.car.hero{ padding:0 }
-.car.hero .masthead{ position:relative; height:92mm; background:var(--ink); color:var(--paper) }
-.car.hero .photo{ position:absolute; top:0; right:0; left:0; height:58mm; margin:0 }
-.car.hero .photo .tag{ display:none }
-.car.hero .photo::after{ content:""; position:absolute; inset:0;
-  background:linear-gradient(180deg,rgba(21,24,28,.42) 0%,rgba(21,24,28,0) 38%,rgba(21,24,28,.55) 100%) }
-.car.hero .ribbon{ position:absolute; top:0; right:0; background:var(--accent); color:#fff;
-  font-size:7.4pt; font-weight:600; letter-spacing:.1em; padding:2mm 5mm; z-index:3 }
-.car.hero .htitle{ position:absolute; top:58mm; right:0; left:0; bottom:0; padding:6mm 16mm 0;
-  display:flex; justify-content:space-between; align-items:flex-start; gap:6mm }
-.car.hero .htitle .head{ color:#8d8579; margin-bottom:3mm }
-.car.hero .htitle .head::after{ background:#3a3f47 }
-.car.hero .htitle h1{ font-size:27pt; line-height:1.08; color:#fff }
-.car.hero .htitle .en{ font-family:"Plex Serif","Plex AR",serif; direction:ltr; unicode-bidi:isolate;
-  text-align:right; font-size:11pt; color:#a8a196; margin-top:1.6mm }
-.car.hero .score{ text-align:center; width:26mm; flex:none }
-.car.hero .score b{ display:block; font-family:"Plex Mono","Plex AR",monospace; font-size:30pt; font-weight:700;
-  line-height:.95; letter-spacing:-.03em; color:#fff }
-.car.hero .score span{ display:block; font-size:6.6pt; letter-spacing:.1em; color:#8d8579; margin-top:1.4mm }
-.car.hero .lower{ position:absolute; top:92mm; right:0; left:0; bottom:0; padding:6mm 16mm 19mm }
-
-/* ---------- editor's picks ---------------------------------------------- */
-.picks h1{ font-size:32pt; margin:3mm 0 3mm }
-.pick{ display:grid; grid-template-columns:34mm 1fr auto; gap:6mm; align-items:center;
-  border-top:.4pt solid var(--rule); padding:4.2mm 0 }
-.pick:first-of-type{ border-top:1.4pt solid var(--ink) }
-.pick .ph{ height:23mm; overflow:hidden; background:var(--ink) }
-.pick .ph img{ width:100%; height:100%; object-fit:cover }
-.pick .no{ font-family:"Plex Mono","Plex AR",monospace; font-size:8pt; color:var(--accent); font-weight:700 }
-.pick h3{ font-family:"Almarai","Plex AR"; font-size:14pt; font-weight:800; margin:.8mm 0 }
-.pick .en{ font-size:8.4pt; color:var(--muted) }
-.pick .why{ font-size:8.4pt; color:var(--ink-soft); margin-top:1.6mm; line-height:1.6 }
-.pick .sc{ text-align:center; width:22mm }
-.pick .sc b{ font-family:"Plex Mono","Plex AR",monospace; font-size:19pt; font-weight:700; color:var(--ink) }
-.pick .sc span{ display:block; font-family:"Plex Mono","Plex AR"; font-size:7pt; color:var(--muted); margin-top:1mm }
-.pricebar dd.arabic{ font-family:"Plex AR"; font-size:10.5pt; font-weight:500; letter-spacing:0 }
-
-/* ---------- index tables ------------------------------------------------ */
-.index h1{ font-size:26pt; margin-bottom:1.5mm }
+/* ---- index tables ------------------------------------------------------- */
 .itab{ width:100%; border-collapse:collapse; margin-top:4mm }
-.itab th{ font-size:6.6pt; letter-spacing:.08em; color:var(--muted); text-align:right;
-  border-bottom:1.2pt solid var(--ink); padding-bottom:1.6mm; font-weight:600 }
-.itab td{ font-size:7.8pt; padding:1.42mm 0; border-bottom:.3pt solid var(--rule); vertical-align:baseline }
-.itab .n{ font-family:"Plex Mono","Plex AR",monospace; color:var(--muted); font-size:7pt; width:8mm }
-.itab .car-en{ font-family:"Plex Serif","Plex AR",serif; direction:ltr; text-align:right }
-.itab .pz{ font-family:"Plex Mono","Plex AR",monospace; font-size:7.6pt; white-space:nowrap }
-.itab .rt{ font-family:"Plex Mono","Plex AR",monospace; font-weight:700; width:11mm }
-.itab .pg{ font-family:"Plex Mono","Plex AR",monospace; color:var(--accent); font-weight:700; width:9mm; text-align:left }
-.itab .dot{ display:inline-block; width:1.8mm; height:1.8mm; border-radius:50%; margin-left:2mm }
-
+.itab th{ font-size:6.8pt; color:var(--muted); text-align:right; font-weight:600;
+  border-bottom:1.4pt solid var(--ink); padding-bottom:1.6mm }
+.itab td{ font-size:7.9pt; padding:2.2mm 0; border-bottom:.3pt solid var(--rule) }
+.itab .n{ font-family:"Mono","AR"; font-size:7pt; color:var(--muted); width:8mm }
+.itab .car{ font-family:"Serif"; direction:ltr; unicode-bidi:isolate; text-align:right }
+.itab .pz{ font-family:"Mono","AR"; font-size:7.6pt; white-space:nowrap }
+.itab .rt{ font-family:"Mono","AR"; font-weight:700; width:11mm }
+.itab .pg{ font-family:"Mono","AR"; font-weight:700; color:var(--red); width:9mm; text-align:left }
+.itab .dot{ display:inline-block; width:1.9mm; height:1.9mm; border-radius:50%; margin-left:2mm }
 .brands{ column-count:3; column-gap:7mm; margin-top:5mm }
 .brand{ break-inside:avoid; margin-bottom:4.4mm }
-.brand h4{ font-family:"Plex Serif","Plex AR",serif; font-size:9.4pt; font-weight:700; border-bottom:1pt solid var(--ink);
-  padding-bottom:1.2mm; margin-bottom:1.6mm; direction:ltr; text-align:right }
+.brand h4{ font-family:"Serif"; font-size:9.6pt; font-weight:700; direction:ltr; text-align:right;
+  border-bottom:1pt solid var(--ink); padding-bottom:1.2mm; margin-bottom:1.6mm }
 .brand li{ list-style:none; display:flex; justify-content:space-between; font-size:7.4pt;
-  padding:.7mm 0; color:var(--ink-soft) }
-.brand li .en{ font-size:7.4pt } .brand li b{ font-family:"Plex Mono","Plex AR",monospace; color:var(--accent) }
+  padding:1mm 0; color:var(--body) }
+.brand li b{ font-family:"Mono","AR"; color:var(--red) }
 
-/* ---------- buying guide ------------------------------------------------ */
-.guide h1{ font-size:31pt; line-height:1.14; margin:4mm 0 5mm }
-.step{ display:grid; grid-template-columns:14mm 1fr; gap:5mm; padding:5mm 0;
-  border-top:.4pt solid var(--rule); break-inside:avoid }
-.step:first-of-type{ border-top:1.4pt solid var(--ink) }
-.step .n{ font-family:"Plex Mono","Plex AR",monospace; font-size:22pt; font-weight:700; color:var(--accent);
-  line-height:.9; letter-spacing:-.04em }
-.step h3{ font-family:"Plex AR"; font-size:10.4pt; font-weight:600; margin-bottom:2mm }
-.step p{ font-size:8.8pt; line-height:1.8; font-weight:300; color:var(--ink-soft) }
-.cta{ margin-top:7mm; background:var(--ink); color:var(--paper); padding:7mm; display:flex;
-  justify-content:space-between; align-items:center }
-.cta h3{ font-family:"Almarai","Plex AR"; font-size:14pt; font-weight:800 }
-.cta p{ font-size:8.4pt; color:#b6afa2; margin-top:1.6mm }
-.cta .w{ text-align:left } .cta .w .wordmark{ font-size:22pt; color:var(--paper) }
-.cta .w div{ font-size:6.4pt; letter-spacing:.5em; color:#8d8579; margin-top:1mm }
+/* ---- data / charts ------------------------------------------------------ */
+.bar{ display:grid; grid-template-columns:28mm 1fr 12mm; align-items:center; gap:3mm;
+  margin-bottom:2.8mm; font-size:8.4pt }
+.bar .track{ height:7mm; background:var(--paper-2) }
+.bar .fill{ height:100% }
+.bar .v{ font-family:"Mono","AR"; font-size:9.4pt; font-weight:700; text-align:left }
+.hist{ display:grid; grid-template-columns:repeat(7,1fr); gap:2.6mm; align-items:end; height:44mm;
+  border-bottom:.5pt solid var(--ink) }
+.hist .col{ display:flex; flex-direction:column; justify-content:flex-end; height:100% }
+.hist .b{ background:var(--ink) } .hist .b.hot{ background:var(--red) }
+.hist .n{ font-family:"Mono","AR"; font-size:8.4pt; font-weight:700; text-align:center; margin-bottom:1.4mm }
+.hist .x{ font-family:"Mono","AR"; font-size:6.6pt; color:var(--muted); text-align:center; margin-top:1.6mm }
+.figcap{ font-size:7.2pt; color:var(--muted); line-height:1.6; margin-top:3mm;
+  border-top:.3pt solid var(--rule); padding-top:2mm }
+.figcap b{ color:var(--red); font-weight:600 }
+.stats{ display:grid; grid-template-columns:repeat(3,1fr); border-top:1.6pt solid var(--ink);
+  margin-top:6mm }
+.stats div{ padding:4mm 4mm 0 0; border-left:.3pt solid var(--rule) }
+.stats div:last-child{ border-left:0 }
+.stats b{ font-family:"Mono","AR"; font-size:19pt; font-weight:700; letter-spacing:-.02em; display:block }
+.stats span{ font-size:7.4pt; color:var(--muted); line-height:1.55; display:block; margin-top:1.6mm }
+.ink .stats{ border-color:#2a2f34 } .ink .stats div{ border-color:#2a2f34 }
+.ink .stats span{ color:#8e887f }
 
-/* ---------- back cover -------------------------------------------------- */
-.back{ background:var(--ink); color:var(--paper); display:flex; flex-direction:column;
-  justify-content:space-between; padding:22mm 18mm }
-.back .wordmark{ font-size:38pt }
-.back h2{ font-size:22pt; line-height:1.3; max-width:130mm; margin-top:6mm }
-.back .facts{ display:grid; grid-template-columns:repeat(2,1fr); gap:6mm 8mm; margin-top:10mm }
-.back .facts div{ border-top:.5pt solid #3a3f47; padding-top:3mm }
-.back .facts dt{ font-size:7pt; letter-spacing:.12em; color:#8d8579; font-weight:600 }
-.back .facts dd{ font-family:"Plex Mono","Plex AR",monospace; font-size:12pt; margin-top:1.6mm }
-.back .fine{ font-size:7.6pt; line-height:1.75; color:#9b9488; max-width:140mm }
-.back .site{ font-family:"Plex Mono","Plex AR",monospace; font-size:11pt; color:var(--accent); letter-spacing:.02em }
-
-/* ---------- bleed helpers & car page rhythm ------------------------------ */
-.page.recto{ padding:var(--m-top) var(--m-in) var(--m-bot) var(--m-out) }
-.page.verso{ padding:var(--m-top) var(--m-out) var(--m-bot) var(--m-in) }
-.page.recto .bleed{ margin-right:calc(-1 * var(--m-in)); margin-left:calc(-1 * var(--m-out)) }
-.page.verso .bleed{ margin-right:calc(-1 * var(--m-out)); margin-left:calc(-1 * var(--m-in)) }
-.car .photo{ height:57mm; margin-top:5mm }
-.car .pricebar{ margin-top:5.5mm }
-.car .twocol{ margin-top:5.5mm }
-.car .verdict{ margin-top:5.5mm }
-.car.b .photo{ height:59mm }
-.car.c .photo{ height:52mm; margin-top:6mm }
-.opener .kicker{ font-size:8pt; letter-spacing:.2em }
-
-/* the profile pages breathe by letting the photo absorb the leftover column */
-.car.b, .car.c{ display:flex; flex-direction:column }
-.car.b > *, .car.c > *{ flex:none }
-.car.b .photo, .car.c .photo{ flex:1 1 auto; min-height:36mm }
-.car.hero .lower{ display:flex; flex-direction:column }
-.car.hero .lower > *{ flex:none }
-.car.hero .lower .twocol{ flex:1 1 auto; align-items:start }
-.cover .flag{ z-index:3 }
-
-
-/* ============================ refinements ================================= */
-
-/* cover ------------------------------------------------------------------- */
-.cover .issue{ text-align:left; display:flex; flex-direction:column; align-items:flex-end }
-.cover .issue span{ font-family:"Plex AR"; font-size:7pt; color:#8d8579; letter-spacing:.12em }
-.cover .issue b{ font-size:26pt; line-height:1; margin:1mm 0 }
-.cover .masthead-rule{ position:absolute; top:33mm; right:14mm; left:14mm; height:1.6pt;
-  background:var(--accent) }
-.cover .headline{ top:39mm }
-.cover .headline h1{ font-size:38pt }
-.cover .headline .sub{ font-size:9pt; color:#a8a196; margin-top:4mm; letter-spacing:.02em }
-.cover .band{ top:76mm; height:92mm }
-.cover .flag{ top:76mm; font-size:7.4pt; letter-spacing:.08em; padding:2mm 6mm }
-.cover .strap{ top:173mm; font-size:9.6pt; max-width:126mm; line-height:1.75 }
-.cover .coverlines{ top:196mm; width:auto; left:14mm }
-.cover .coverlines li{ display:grid; grid-template-columns:9mm 1fr auto; gap:3mm;
-  padding:2.4mm 0; align-items:baseline }
-.cover .coverlines li .ix{ font-family:"Plex Mono","Plex AR"; font-size:7pt; color:var(--accent) }
-.cover .coverlines li .tx{ font-family:"Plex AR",sans-serif; font-size:8.8pt;
-  letter-spacing:0; color:#e6e0d4 }
-.cover .coverlines li .pg{ font-family:"Plex Mono","Plex AR"; font-size:7pt; color:#8d8579 }
-.cover .stats{ bottom:30mm }
-
-/* editor's letter --------------------------------------------------------- */
-.letter .cols{ column-fill:balance }
-.pullquote{ margin:7mm 0 0; background:var(--ink); color:var(--paper); padding:7mm 8mm;
-  display:flex; gap:5mm; align-items:flex-start }
-.pullquote .mark{ font-family:"Plex Serif","Plex AR",serif; font-size:34pt; line-height:.6; color:var(--accent) }
-.pullquote p{ font-family:"Almarai","Plex AR"; font-weight:700; font-size:15pt; line-height:1.5 }
-.newin{ display:grid; grid-template-columns:repeat(3,1fr); margin-top:7mm;
-  border-top:1.4pt solid var(--ink) }
-.newin div{ padding:4mm 4mm 0 0; border-left:.3pt solid var(--rule) }
-.newin div:last-child{ border-left:0 }
-.newin b{ font-family:"Plex Mono","Plex AR"; font-size:18pt; font-weight:700; letter-spacing:-.03em }
-.newin span{ display:block; font-size:7.6pt; color:var(--muted); line-height:1.5; margin-top:1.5mm }
-
-/* contents ---------------------------------------------------------------- */
-.toc-feat figure{ height:35mm }
-.page.verso .segcol li{ padding:.62mm 0 }
-.segcols{ display:grid; grid-template-columns:1fr 1fr; gap:4mm 9mm; margin-top:4mm }
-.segcol h4{ display:flex; justify-content:space-between; align-items:baseline;
-  border-bottom:2pt solid; padding-bottom:1.4mm; margin-bottom:1.8mm;
-  font-family:"Plex AR"; font-size:9pt; font-weight:600 }
-.segcol h4 b{ font-family:"Plex Mono","Plex AR"; font-size:9pt }
-.segcol li{ list-style:none; display:flex; justify-content:space-between; font-size:7.6pt;
-  padding:.75mm 0; color:var(--ink-soft); border-bottom:.3pt solid rgba(0,0,0,.05) }
-.segcol li b{ font-family:"Plex Mono","Plex AR"; color:var(--accent); font-size:7.4pt }
-.chips{ display:grid; grid-template-columns:repeat(4,1fr); gap:2.6mm }
-.chips div{ border-top:1.2pt solid var(--ink); padding-top:2mm; font-size:7.4pt }
-.chips .en{ display:block; font-size:7.6pt; line-height:1.35 }
-.chips .f{ display:block; color:var(--muted); font-size:7pt; margin-top:.8mm }
-.chips b{ font-family:"Plex Mono","Plex AR"; color:var(--accent); font-size:8pt }
-
-/* market ------------------------------------------------------------------ */
-.hist{ height:40mm; border-bottom:.5pt solid var(--ink) }
-.scatter{ height:82mm; margin-top:2mm }
-.scatter .gl{ position:absolute; right:0; left:0; height:.3pt; background:var(--rule) }
-.scatter .lbl{ font-size:6pt; background:rgba(244,241,234,.86); padding:0 .6mm }
-.extremes{ display:grid; grid-template-columns:1fr 1fr; gap:8mm; margin-top:7mm }
-.extreme h4{ font-family:"Plex AR"; font-size:9pt; font-weight:600; border-bottom:1.4pt solid var(--ink);
-  padding-bottom:1.6mm; margin-bottom:2mm }
-.extreme li{ list-style:none; display:grid; grid-template-columns:1fr auto 8mm; gap:3mm;
-  font-size:7.6pt; padding:1.35mm 0; border-bottom:.3pt solid var(--rule); align-items:baseline }
-.extreme .en{ font-family:"Plex Serif","Plex AR",serif; direction:ltr; text-align:right }
-.extreme .pz{ font-family:"Plex Mono","Plex AR"; font-size:7.4pt }
-.extreme b{ font-family:"Plex Mono","Plex AR"; color:var(--accent); font-size:7.4pt; text-align:left }
-.extreme p{ font-size:7.2pt; color:var(--muted); margin-top:2mm; line-height:1.6 }
-
-/* anatomy ----------------------------------------------------------------- */
-.anatomy .split{ display:grid; grid-template-columns:88mm 1fr; gap:8mm; margin-top:6mm }
-.mini-wrap{ position:relative }
-.mini{ width:88mm; height:124.5mm; overflow:hidden; border:.5pt solid var(--rule);
-  background:var(--paper); box-shadow:0 1mm 3mm rgba(0,0,0,.10) }
-.mini-page{ transform:scale(.4191); transform-origin:top right; box-shadow:none;
-  page-break-after:auto; break-after:auto; break-inside:avoid; position:absolute; top:0; right:0 }
-.mini-page .folio{ display:none }
-.mini-cap{ font-size:6.6pt; color:var(--muted); margin-top:2mm; text-align:center }
-.mk{ position:absolute; left:-4.5mm; width:6mm; height:6mm; border-radius:50%;
-  background:var(--accent); color:#fff; font-family:"Plex Mono","Plex AR"; font-size:6.6pt; font-weight:700;
-  display:flex; align-items:center; justify-content:center }
-.anatomy .calls .call{ display:grid; grid-template-columns:7mm 1fr; gap:3mm; padding:2.6mm 0;
+/* ---- segment panels ----------------------------------------------------- */
+.segs{ display:grid; grid-template-columns:1fr 1fr; gap:8mm; margin-top:6mm }
+.seg{ border-top:3pt solid var(--seg); padding-top:3mm }
+.seg h3{ font-family:"Display","AR"; font-weight:800; font-size:13pt }
+.seg .meta{ font-family:"Mono","AR"; font-size:7.4pt; color:var(--muted); margin-top:1.2mm }
+.seg figure{ height:42mm; overflow:hidden; margin:3.4mm 0; background:var(--ink) }
+.seg figure img{ width:100%; height:100%; object-fit:cover }
+.seg p{ font-size:8.6pt; line-height:1.78; color:var(--body) }
+.seg .win{ font-size:8.2pt; line-height:1.7; margin-top:3mm; padding-top:2.4mm;
   border-top:.3pt solid var(--rule) }
-.anatomy .calls .call:first-child{ border-top:0; padding-top:0 }
-.anatomy .calls .n{ font-family:"Plex Mono","Plex AR"; font-size:8pt; font-weight:700; color:var(--accent) }
-.anatomy .calls b{ display:block; font-size:8.6pt; font-weight:600; margin-bottom:.8mm }
-.anatomy .calls div div{ font-size:7.6pt; line-height:1.6; color:var(--ink-soft) }
-.anatomy .legend{ margin-top:7mm }
-.anatomy .legend div{ border-top-width:2.4pt; border-top-style:solid; padding-top:2.4mm;
-  font-size:7.4pt; color:var(--muted) }
-.anatomy .legend b{ display:block; font-size:8.4pt; font-weight:600; margin-bottom:.8mm; color:var(--ink) }
+.seg .win b{ color:var(--seg); font-weight:600 }
 
-/* section opener ---------------------------------------------------------- */
-.opener .bignum{ font-size:104pt }
-.opener .band{ height:74mm; margin:6mm calc(-1 * var(--m-out)) 0 calc(-1 * var(--m-in)) }
-.segstrip{ display:grid; grid-template-columns:repeat(4,1fr); margin:6mm 0 0;
-  border-top:.4pt solid #3a3f47 }
-.segstrip div{ padding:4mm 4mm 0 0; border-left:.3pt solid #3a3f47 }
-.segstrip div:last-child{ border-left:0 }
-.segstrip b{ font-family:"Plex Mono","Plex AR"; font-size:17pt; font-weight:700; color:var(--paper);
-  display:block; line-height:1 }
-.segstrip span{ display:block; font-size:8pt; color:#cfc8ba; margin-top:1.6mm }
-.segstrip u{ display:block; text-decoration:none; font-family:"Plex Mono","Plex AR"; font-size:6.6pt;
-  color:#8d8579; margin-top:1mm }
-
-/* picks ------------------------------------------------------------------- */
-.pick{ grid-template-columns:48mm 1fr auto; gap:7mm; padding:5.2mm 0 }
-.pick .ph{ height:31mm }
-.pick h3{ font-size:15pt }
-
-/* index ------------------------------------------------------------------- */
-.itab td{ padding:2.2mm 0 }
-.legend-row{ display:flex; gap:6mm; align-items:center; margin-top:4mm; padding-top:3mm;
-  border-top:1.2pt solid var(--ink); font-size:7.4pt; color:var(--ink-soft) }
-.legend-row i{ display:inline-block; width:2.2mm; height:2.2mm; border-radius:50%; margin-left:1.6mm }
-.legend-row .note-inline{ margin-right:auto; color:var(--muted); font-size:7pt }
-.index-notes{ display:grid; grid-template-columns:repeat(3,1fr); gap:6mm; margin-top:6mm;
-  padding-top:3.4mm; border-top:1.2pt solid var(--ink); font-size:7.4pt; line-height:1.65;
-  color:var(--ink-soft) }
-.index-notes b{ color:var(--accent); font-weight:600 }
-.brandfoot{ margin-top:6mm }
-.brandfoot div{ padding:3.4mm 4mm 0 0 }
-.brandfoot b{ font-size:15pt }
-.brand li{ padding:1.05mm 0 }
-
-/* buying guide ------------------------------------------------------------ */
-.checklist{ margin-top:6mm; border:.5pt solid var(--rule); background:var(--white); padding:5mm 6mm }
-.checklist h4{ font-family:"Plex AR"; font-size:9pt; font-weight:600; margin-bottom:3mm;
-  color:var(--accent); letter-spacing:.02em }
-.checklist ul{ column-count:2; column-gap:8mm }
-.checklist li{ list-style:none; font-size:8pt; color:var(--ink-soft); padding:1.4mm 0 1.4mm 0;
-  padding-right:6mm; position:relative; break-inside:avoid }
-.checklist li::before{ content:""; position:absolute; right:0; top:1.8mm; width:3mm; height:3mm;
+/* ---- checklist / closing ------------------------------------------------ */
+.steps .step{ display:grid; grid-template-columns:13mm 1fr; gap:5mm; padding:4.6mm 0;
+  border-top:.4pt solid var(--rule) }
+.steps .step:first-child{ border-top:1.6pt solid var(--ink) }
+.steps .n{ font-family:"Mono","AR"; font-size:21pt; font-weight:700; color:var(--red); line-height:.9 }
+.steps h3{ font-size:10.4pt; font-weight:600; margin-bottom:1.6mm; font-family:"AR" }
+.steps p{ font-size:8.8pt; line-height:1.8; color:var(--body) }
+.check{ margin-top:6mm; border:.5pt solid var(--rule); background:var(--white); padding:5mm 6mm }
+.check h4{ font-size:9pt; font-weight:600; color:var(--red); margin-bottom:3mm }
+.check ul{ column-count:2; column-gap:8mm }
+.check li{ list-style:none; font-size:8.2pt; color:var(--body); padding:1.5mm 6mm 1.5mm 0;
+  position:relative; break-inside:avoid }
+.check li::before{ content:""; position:absolute; right:0; top:2mm; width:3mm; height:3mm;
   border:.6pt solid var(--muted) }
-.cta{ margin-top:6mm; padding:6mm 7mm }
-.cta .w .wordmark{ letter-spacing:-.03em }
-.cta .w div{ letter-spacing:.42em; font-size:6pt }
+.cta{ margin-top:6mm; background:var(--ink); color:var(--paper); padding:6mm 7mm; display:flex;
+  justify-content:space-between; align-items:center }
+.cta h3{ font-family:"Display","AR"; font-weight:800; font-size:14pt; color:#fff }
+.cta p{ font-size:8.4pt; color:#a49d92; margin-top:1.4mm }
+.cta .w{ font-family:"Serif"; font-weight:700; font-size:22pt; color:#fff; letter-spacing:-.03em }
 
-/* back cover -------------------------------------------------------------- */
-.back{ padding:20mm 18mm 16mm }
-.back .wm-sub{ font-size:7pt; letter-spacing:.6em; color:#8d8579; margin-top:2mm }
-.back h2{ font-size:21pt; margin-top:5mm }
-.back .band{ height:74mm; margin:0 -18mm; overflow:hidden; position:relative }
-.back .band img{ width:100%; height:100%; object-fit:cover }
-.back .band::after{ content:""; position:absolute; inset:0;
-  background:linear-gradient(180deg,rgba(21,24,28,.35),rgba(21,24,28,.05) 40%,rgba(21,24,28,.55)) }
-.back .facts{ margin-top:0 }
-.back .site{ margin-top:5mm }
+/* ---- back cover --------------------------------------------------------- */
+.back{ background:var(--ink); color:var(--paper); padding:0 }
+.back .shot{ position:absolute; top:0; right:0; left:0; height:150mm; overflow:hidden }
+.back .shot img{ width:100%; height:100%; object-fit:cover }
+.back .shot::after{ content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg,rgba(16,19,21,.25),rgba(16,19,21,.98)) }
+.back .body{ position:absolute; top:118mm; right:16mm; left:16mm; z-index:2 }
+.back .w{ font-family:"Serif"; font-weight:700; font-size:40pt; color:#fff; letter-spacing:-.035em }
+.back h2{ font-size:22pt; line-height:1.34; color:#fff; margin-top:6mm; max-width:140mm }
+.back .facts{ display:grid; grid-template-columns:repeat(2,1fr); gap:5mm 8mm; margin-top:9mm }
+.back .facts div{ border-top:.4pt solid #2a2f34; padding-top:2.6mm }
+.back .facts dt{ font-size:7pt; color:#8e887f } 
+.back .facts dd{ font-family:"Mono","AR"; font-size:12pt; margin-top:1.4mm; color:#fff }
+.back .fine{ position:absolute; bottom:15mm; right:16mm; left:16mm; font-size:7.4pt; line-height:1.7;
+  color:#8e887f; border-top:.4pt solid #2a2f34; padding-top:3mm }
+.back .site{ font-family:"Mono","AR"; color:var(--red); font-size:10pt; margin-top:2.4mm; display:block }
 
-.fromissue{ margin-top:7mm }
-.fromissue .lbl{ font-size:7pt; letter-spacing:.14em; color:var(--muted); font-weight:600;
-  border-top:1.2pt solid var(--ink); padding-top:2.4mm; margin-bottom:3mm }
-.fromissue .strip{ display:grid; grid-template-columns:repeat(3,1fr); gap:5mm }
-.fromissue figure img{ width:100%; height:24mm; object-fit:cover; display:block }
-.fromissue figcaption b{ display:block; font-family:"Plex Serif","Plex AR",serif; direction:ltr;
-  text-align:right; font-size:8.2pt; margin-top:2mm }
-.fromissue figcaption span{ display:block; font-size:7.4pt; color:var(--muted); margin-top:.8mm }
-.fromissue figcaption u{ display:block; text-decoration:none; font-family:"Plex Mono","Plex AR";
-  font-size:6.8pt; color:var(--accent); margin-top:1mm }
-.letter .cols p{ font-size:9.1pt }
-.chips div{ min-height:11mm; padding-top:1.6mm }
+/* ---- group test board --------------------------------------------------- */
+.board{ margin-top:6mm; border-top:1.6pt solid var(--ink) }
+.fin{ display:grid; grid-template-columns:44mm 12mm 1fr auto auto; gap:5mm; align-items:center;
+  padding:4.6mm 0; border-bottom:.4pt solid var(--rule) }
+.fin figure{ height:27mm; overflow:hidden; background:var(--ink) }
+.fin figure img{ width:100%; height:100%; object-fit:cover }
+.fin .rk{ font-family:"Mono","AR"; font-size:14pt; font-weight:700; color:var(--red) }
+.fin .nm h3{ font-family:"Display","AR"; font-weight:800; font-size:14pt; line-height:1.2 }
+.fin .nm .en{ font-size:8.4pt; color:var(--muted); margin-top:.9mm }
+.fin .sc b{ font-family:"Mono","AR"; font-size:19pt; font-weight:700 }
+.fin .pz{ font-family:"Mono","AR"; font-size:8.6pt; color:var(--body); width:34mm; text-align:left }
 
-.scatter .lbl{ transform:translate(50%,0) }
-.scatter .lbl.edge-r{ transform:none }
-.scatter .lbl.edge-l{ transform:translate(100%,0) }
-.segtable{ margin-top:7mm; border-top:1.4pt solid var(--ink) }
-.segtable .hdr, .segtable .row{ display:grid; grid-template-columns:1.6fr .6fr 1fr 1fr 1fr;
-  gap:3mm; align-items:baseline; padding:2.2mm 0; border-bottom:.3pt solid var(--rule) }
-.segtable .hdr{ font-size:6.8pt; letter-spacing:.08em; color:var(--muted); font-weight:600 }
-.segtable .row{ font-size:8pt }
-.segtable .row i{ display:inline-block; width:2.2mm; height:2.2mm; border-radius:50%; margin-left:2mm }
-.segtable .num{ font-family:"Plex Mono","Plex AR"; font-size:8.2pt; direction:ltr; unicode-bidi:isolate;
-  text-align:right }
+.h2h-table{ width:100%; border-collapse:collapse; margin-top:4mm }
+.h2h-table th{ font-size:6.8pt; color:var(--muted); font-weight:600; text-align:right;
+  border-bottom:1.4pt solid var(--ink); padding-bottom:1.6mm }
+.h2h-table td{ font-size:8.4pt; padding:2.2mm 0; border-bottom:.3pt solid var(--rule) }
+.h2h-table td.k{ color:var(--muted) } .h2h-table td.v{ font-family:"Mono","AR"; font-size:8.8pt }
 
-.page.best .pick{ grid-template-columns:56mm 1fr auto; padding:6mm 0 }
-.page.best .pick .ph{ height:38mm }
-.page.best .pick h3{ font-size:16pt }
-.page.best .pick .why{ font-size:8.6pt; margin-top:2.4mm }
-.closing{ margin-top:5mm; padding-top:3.4mm; border-top:1.2pt solid var(--ink); font-size:8.6pt;
-  line-height:1.75; color:var(--ink-soft); max-width:150mm }
+/* ---- scatter ------------------------------------------------------------ */
+.scatter{ position:relative; height:74mm; border-right:.5pt solid var(--ink);
+  border-bottom:.5pt solid var(--ink); margin-top:2mm }
+.scatter .gl{ position:absolute; right:0; left:0; height:.3pt; background:var(--rule) }
+.scatter .pt{ position:absolute; width:2.1mm; height:2.1mm; border-radius:50%;
+  transform:translate(50%,50%) }
+.scatter .lbl{ position:absolute; font-family:"Mono","AR"; font-size:6pt; white-space:nowrap;
+  background:rgba(242,239,232,.86); padding:0 .6mm; transform:translate(50%,0) }
+.scatter .lbl.edge-r{ transform:none } .scatter .lbl.edge-l{ transform:translate(100%,0) }
+.scatter .ax{ position:absolute; font-family:"Mono","AR"; font-size:6.4pt; color:var(--muted) }
 
-.toc-sec em{ font-family:"Plex AR"; font-style:normal; font-size:7.6pt; font-weight:300;
-  color:var(--muted); margin-right:3mm }
-.toc-sec em + *{ margin-right:3mm }
+/* ---- buyer's guide pages ------------------------------------------------ */
+.segband{ background:var(--red); color:#fff; font-size:8pt; font-weight:600; padding:1.8mm 4mm;
+  margin:-2mm 0 3mm }
+.page.odd .segband{ margin-right:calc(-1 * var(--out)); margin-left:calc(-1 * var(--gut)) }
+.page.even .segband{ margin-right:calc(-1 * var(--gut)); margin-left:calc(-1 * var(--out)) }
+.page.guide{ display:flex; flex-direction:column }
+
+/* ---- road-test opener extras ------------------------------------------- */
+.rt-photo .quick{ display:grid; grid-template-columns:repeat(3,1fr); gap:5mm; margin-top:5mm;
+  border-top:.4pt solid #2a2f34; padding-top:3.4mm }
+.rt-photo .quick span{ display:block; font-size:6.8pt; color:#8e887f }
+.rt-photo .quick b{ display:block; font-family:"Mono","AR"; font-size:12pt; font-weight:700; color:#fff;
+  margin-top:1.2mm }
+.rt-photo .gallery{ position:static; display:flex; gap:3mm; align-items:flex-end; margin-top:auto;
+  padding-top:6mm }
+.rt-photo .gallery .lab{ font-size:6.8pt; color:#8e887f; width:20mm; line-height:1.4 }
+.rt-photo .gallery figure{ width:30mm }
+.rt-photo .gallery figure img{ width:100%; height:19mm; object-fit:cover; display:block }
+.rt-photo .gallery figcaption{ font-family:"Serif"; direction:ltr; text-align:right; font-size:5.8pt;
+  color:#8e887f; margin-top:1mm }
+
+/* ---- glossary ----------------------------------------------------------- */
+.gloss{ column-count:2; column-gap:9mm; margin-top:5mm }
+.gl-item{ break-inside:avoid; margin-bottom:5mm }
+.gl-item h4{ font-family:"Display","AR"; font-weight:800; font-size:10pt; margin-bottom:1.4mm }
+.gl-item p{ font-size:8.4pt; line-height:1.75; color:var(--body) }
+
+/* ---- contents fit ------------------------------------------------------- */
+.toc .big figure{ height:33mm }
+.toc-row{ padding:1.5mm 0 }
+.toc-block{ margin-top:4mm }
+
+/* ---- full-ratio band over a blurred backdrop -----------------------------
+   The press shots are 3.77:1. Cropping one to a full A4 page would show a
+   wing mirror; instead the sharp band runs at the image's own ratio and a
+   blurred, darkened copy fills the rest of the page behind it. */
+.bgshot{ position:absolute; inset:-8mm; overflow:hidden; z-index:0 }
+.bgshot img{ width:100%; height:100%; object-fit:cover;
+  filter:blur(9mm) brightness(.42) saturate(.75) }
+.strip{ position:absolute; right:0; left:0; overflow:hidden; z-index:1 }
+.strip img{ width:100%; height:100%; object-fit:cover }
+.scrim{ position:absolute; inset:0; z-index:2;
+  background:linear-gradient(180deg,rgba(16,19,21,.62) 0,rgba(16,19,21,.05) 26%,
+    rgba(16,19,21,.05) 46%,rgba(16,19,21,.82) 66%,rgba(16,19,21,.97) 100%) }
+.cover .strip{ top:74mm; height:60mm }
+.cover .mast, .cover .flash, .cover .head, .cover .lines, .cover .foot{ z-index:3 }
+.opener .strip{ top:24mm; height:62mm }
+.opener .txt, .opener .credit{ z-index:3 }
+.back .strip{ top:44mm; height:58mm }
+.back .body, .back .fine{ z-index:3 }
+.back .scrim{ background:linear-gradient(180deg,rgba(16,19,21,.55) 0,rgba(16,19,21,.05) 22%,
+  rgba(16,19,21,.1) 40%,rgba(16,19,21,.9) 58%,rgba(16,19,21,1) 78%) }
+
+.toplab{ position:absolute; top:11mm; right:15mm; left:15mm; z-index:3; font-size:7.4pt;
+  color:#b7b0a4; border-bottom:.4pt solid rgba(255,255,255,.22); padding-bottom:2.4mm }
+.inthis{ margin-top:auto; display:grid; grid-template-columns:repeat(3,1fr); gap:6mm;
+  border-top:.4pt solid rgba(255,255,255,.24); padding-top:4mm }
+.inthis span{ display:block; font-family:"Mono","AR"; font-size:6.8pt; color:#e0725f }
+.inthis b{ display:block; font-size:9pt; font-weight:600; color:#fff; margin-top:1.4mm;
+  line-height:1.45 }
+
+.opener .txt .kick{ align-self:flex-start }
+.teaser{ column-count:2; column-gap:8mm; margin-top:6mm }
+.teaser p{ font-size:9.2pt; line-height:1.85; color:#c6bfb3; margin-bottom:3.4mm;
+  break-inside:avoid }
+
+.segkey{ display:grid; grid-template-columns:repeat(4,1fr); gap:6mm; margin-top:8mm }
+.segkey b{ display:block; font-size:9pt; font-weight:600; color:#fff }
+.segkey span{ display:block; font-size:7.4pt; color:#b7b0a4; margin-top:1.2mm }
+.segkey u{ display:block; text-decoration:none; font-family:"Mono","AR"; font-size:6.6pt;
+  color:#8e887f; margin-top:1mm }
+
+.scale{ margin-top:7mm }
+.scale .lab{ display:flex; justify-content:space-between; font-size:7.2pt; color:var(--muted);
+  margin-bottom:2mm }
+.bandrow{ display:flex; gap:1.5mm }
+.bandrow div{ background:var(--paper-2); padding:3mm 3.4mm }
+.bandrow b{ display:block; font-family:"Mono","AR"; font-size:9.4pt; font-weight:700 }
+.bandrow span{ display:block; font-size:7pt; line-height:1.5; margin-top:1.2mm; color:var(--body) }
+.bandrow div:last-child span{ color:#f2d9d5 }
+.escape{ display:grid; grid-template-columns:repeat(4,1fr); gap:5mm }
+.escape div{ border-top:1.2pt solid var(--ink); padding-top:2.4mm }
+.escape .en{ display:block; font-family:"Serif"; direction:ltr; text-align:right; font-size:8.4pt }
+.escape b{ display:block; font-family:"Mono","AR"; font-size:9pt; font-weight:700; margin-top:1.4mm }
+.escape u{ display:block; text-decoration:none; font-size:6.8pt; color:var(--muted); margin-top:1mm }
+
+/* ---- where to start ----------------------------------------------------- */
+.profs{ margin-top:6mm }
+.prof{ padding:4.2mm 0; border-top:.4pt solid var(--rule) }
+.prof:first-child{ border-top:1.6pt solid var(--ink) }
+.prof .q{ display:grid; grid-template-columns:11mm 1fr; gap:4mm; align-items:start }
+.prof .q span{ font-family:"Mono","AR"; font-size:13pt; font-weight:700; color:var(--red) }
+.prof .q h3{ font-family:"Display","AR"; font-weight:800; font-size:12pt; line-height:1.35 }
+.prof .q p{ font-size:8.2pt; line-height:1.7; color:var(--body); margin-top:1.4mm }
+.prof .picks{ display:grid; grid-template-columns:repeat(3,1fr); gap:5mm; margin:3mm 0 0 0;
+  padding-right:15mm }
+.prof .picks figure{ height:18mm; overflow:hidden; background:var(--ink) }
+.prof .picks img{ width:100%; height:100%; object-fit:cover }
+.prof .picks .en{ display:block; font-family:"Serif"; direction:ltr; text-align:right;
+  font-size:8pt; margin-top:1.6mm }
+.prof .picks b{ display:block; font-family:"Mono","AR"; font-size:8.4pt; font-weight:700; margin-top:.8mm }
+.prof .picks u{ display:block; text-decoration:none; font-family:"Mono","AR"; font-size:6.6pt;
+  color:var(--muted); margin-top:.7mm }

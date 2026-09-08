@@ -8,22 +8,25 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / "build" / "magazine.html"
-PDF = ROOT / "AnoKar-Sedan-Guide-Issue-01-2026.pdf"
+PDF = ROOT / "AnoKar-Issue-01-Battle-of-the-100K.pdf"
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 AUDIT_JS = """
 () => {
+  // art is meant to bleed; body content must clear the folio strip
+  const ART = /bgshot|scrim|strip|shot|photo|ph\b|band|flash|cover|opener|back|lower/;
+  const CONTENT = /nextup|meter|verdict|specs|itab|step|pick|brand|cta|toc-row|chart|stats|closing|checklist|gloss|gl-item|say|alt|cols|sign|facts|coverlines|bar|hist|quick|gallery|board|fin|seg|rulebox|item|copy|pull|sidebar|table/;
   const out = [];
   document.querySelectorAll('body > .page').forEach(p => {
     const pr = p.getBoundingClientRect();
     let worst = 0, who = '';
     p.querySelectorAll('*').forEach(el => {
+      const cn = String(el.className);
+      if (ART.test(cn) || el.closest('.bgshot,.strip,.shot,.photo,.ph,.band,.flash')) return;
+      const guard = CONTENT.test(cn) ? 54 : 0;
       const r = el.getBoundingClientRect();
-      // content must also clear the folio strip at the foot of the page
-      const guard = /nextup|meter|verdict|twocol|specs|pricebar|itab|step|pick|brand|cta|toc-row|chart|keyfacts|closing|fromissue|newin|pullquote|checklist|segtable|extremes|legend|index-notes|segcols|chips|sign|strip|facts|coverlines/
-        .test(String(el.className)) ? 54 : 0;
       const over = Math.max(r.bottom - (pr.bottom - guard), 0);
-      if (over > worst) { worst = over; who = el.className || el.tagName; }
+      if (over > worst) { worst = over; who = cn || el.tagName; }
     });
     if (worst > 1) out.push({ pg: p.dataset.pg, over: Math.round(worst), who: String(who).slice(0, 46) });
   });
@@ -33,31 +36,18 @@ AUDIT_JS = """
 
 
 def finalize(path: Path):
-    """Give the exported file the furniture a published issue should carry:
-    document metadata and a bookmark outline covering every section and car."""
-    cars = json.loads((ROOT / "build" / "content.json").read_text(encoding="utf-8"))["cars"]
+    """Stamp the exported file with document metadata and the issue's outline."""
+    outline = json.loads((ROOT / "build" / "outline.json").read_text(encoding="utf-8"))
     doc = pymupdf.open(path)
     doc.set_metadata({
-        "title": "AnoKar — دليل السيدان تحت 100,000 درهم · العدد 01 · 2026",
+        "title": "AnoKar — معركة المئة ألف · العدد 01 · سبتمبر 2026",
         "author": "AnoKar Solutions",
         "subject": "دليل شراء سيدان جديدة في الإمارات تحت 100,000 درهم — 48 سيارة، العدد الأول",
         "keywords": "سيدان, الإمارات, دليل شراء, 2026, AnoKar, sedan buying guide, UAE",
         "creator": "AnoKar editorial desk",
         "producer": "AnoKar magazine build pipeline",
     })
-    toc = [
-        [1, "الغلاف", 1], [1, "بيانات العدد", 2], [1, "الافتتاحية — كيف بُني هذا الدليل؟", 3],
-        [1, "المحتويات", 4], [1, "السوق في صفحة واحدة", 6], [1, "تشريح صفحة السيارة", 8],
-        [1, "القسم الأول — ثمانٍ وأربعون سيدان", 9],
-    ]
-    for i, c in enumerate(cars):
-        toc.append([2, f'{c["rank"]:02d} · {c["name_en"]} — {c["name_ar"]}', 10 + i])
-    toc += [
-        [1, "اختيارات المحرر", 58], [1, "الأفضل في كل شريحة", 59],
-        [1, "الفهرس الكامل", 60], [1, "دليل العلامات", 62],
-        [1, "قبل أن تشتري", 63], [1, "الغلاف الأخير", 64],
-    ]
-    doc.set_toc(toc)
+    doc.set_toc(outline)
     doc.save(path.with_suffix(".tmp.pdf"), garbage=4, deflate=True)
     doc.close()
     path.with_suffix(".tmp.pdf").replace(path)
